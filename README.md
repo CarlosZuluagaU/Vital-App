@@ -54,7 +54,7 @@ La conexión a MySQL está preparada a nivel de entorno, pero no es requisito pa
 	java -version
 	```
 	En Windows, configurar JAVA_HOME.
-- **Maven:** 3.8+
+- **Maven:** 3.9+
 	```bash
 	mvn -v
 	```
