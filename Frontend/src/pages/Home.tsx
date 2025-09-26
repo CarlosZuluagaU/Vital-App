@@ -3,27 +3,30 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { usePrefs } from "../context/Preferences";
 import RoutineCard from "../components/RoutineCard";
-import { getRoutines, type Routine } from "../hooks/useApi";
+import { getMultiComponentRoutines, getMultiComponentRoutinesByIntensity } from "../hooks/useApi";
+import type { MultiComponentRoutine } from "../types/InterfaceRoutines";
 
 export default function Home() {
   const nav = useNavigate();
   const { profile } = usePrefs();
   const [loading, setLoading] = React.useState(true);
-  const [items, setItems] = React.useState<Routine[]>([]);
-  const levelParam = profile?.level === "BASICO" ? "basico" : profile?.level === "INTERMEDIO" ? "intermedio" : undefined;
+  const [items, setItems] = React.useState<MultiComponentRoutine[]>([]);
+
+  //!Toca mapear bien como es que es el nivel de intensidad en el back
+  const intensityLevel = profile?.level === "BASICO" ? "basico" : profile?.level === "INTERMEDIO" ? "intermedio" : undefined;
 
   React.useEffect(() => {
     let mounted = true;
     (async () => {
       try {
-        const data = await getRoutines(levelParam);
+        const data = intensityLevel ? await getMultiComponentRoutinesByIntensity(intensityLevel) : await getMultiComponentRoutines();
         if (mounted) setItems(data);
       } finally {
         if (mounted) setLoading(false);
       }
     })();
     return () => { mounted = false; };
-  }, [levelParam]);
+  }, [intensityLevel]);
 
   return (
     <main className="w-full">
@@ -65,7 +68,7 @@ export default function Home() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {items.map((r) => <RoutineCard key={r.id} routine={r} />)}
+            {items.map((r) => <RoutineCard key={r.id} id={r.id} title={r.title} totalDurationMinutes={r.totalDurationMinutes} intensityLevel={r.intensityLevel} thumbnailUrl={undefined} />)}
           </div>
         )}
       </section>

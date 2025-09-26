@@ -1,11 +1,16 @@
 import { useNavigate } from "react-router-dom";
-import type { Routine } from "../hooks/useApi";
+import React from "react";
 
-type Props = { routine: Routine };
+type Props = {
+  id: number;
+  title: string;
+  totalDurationMinutes: number;
+  intensityLevel?: string;
+  thumbnailUrl?: string | null;
+};
 
-export default function RoutineCard({ routine }: Props) {
+export default function RoutineCard({ id, title, totalDurationMinutes, intensityLevel, thumbnailUrl }: Props) {
   const navigate = useNavigate();
-  const { id, title, duration_minutes, intensity, thumbnail } = routine;
 
   return (
     <article className="bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm hover:shadow-md focus-within:shadow-md transition-shadow">
@@ -16,8 +21,8 @@ export default function RoutineCard({ routine }: Props) {
         aria-label={`Abrir rutina: ${title}`}
       >
         <div className="aspect-[16/9] w-full bg-[var(--track)]">
-          {thumbnail ? (
-            <img src={thumbnail} alt="" className="block h-full w-full object-cover" loading="lazy" decoding="async" />
+          {thumbnailUrl ? (
+            <img src={thumbnailUrl} alt="" className="block h-full w-full object-cover" loading="lazy" decoding="async" />
           ) : (
             <div className="h-full w-full grid place-content-center">
               <span className="text-[var(--fg-muted)] text-sm">Vista previa</span>
@@ -28,7 +33,7 @@ export default function RoutineCard({ routine }: Props) {
         <div className="p-3 md:p-4">
           <h3 className="text-base md:text-lg font-semibold text-[var(--fg)]">{title}</h3>
           <p className="mt-1 text-sm md:text-[15px] text-[var(--fg-muted)]">
-            {duration_minutes} min{intensity ? ` · ${intensity.toLowerCase()}` : ""}
+            {totalDurationMinutes} min{intensityLevel ? ` · ${intensityLevel.toLowerCase()}` : ""}
           </p>
 
           <div className="mt-3 md:mt-4 flex items-center gap-2">

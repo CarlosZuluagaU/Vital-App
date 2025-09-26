@@ -1,148 +1,12 @@
+import type {ExerciseLite, ExerciseDetail, MultiComponentRoutine, RoutineSimple, LocationType} from '../types/InterfaceRoutines';
+
 export type Level = "BASICO" | "INTERMEDIO";
-export type Intensity = "BAJA" | "MEDIA" | "ALTA";
-export type ExerciseType = "FUERZA" | "EQUILIBRIO" | "FUNCIONAL";
-export type Category = "MOVILIDAD" | "FUERZA" | "EQUILIBRIO" | "FUNCIONAL";
-
-//TODO: Organizar bien esto para que sea real y no solo con datos quemados
-
-
-export interface Routine {
-  id: string;
-  level: Level;
-  title: string;
-  description?: string;
-  duration_minutes: number; // 1..300
-  intensity?: Intensity;
-  category?: Category;
-  // opcionales de UI
-  thumbnail?: string;
-}
-
-export interface Exercise {
-  id: string;
-  name: string;
-  instructions: string;
-  video_url?: string;
-  type: ExerciseType;
-}
-
-export interface RoutineExercise {
-  id: string;
-  routine_id: string;   // FK routines.id
-  exercise_id: string;  // FK exercises.id
-  order_index: number;  // >= 0, único en la rutina
-  repetitions?: number;
-  duration_seconds?: number;
-}
-
-export interface ProgressRecord {
-  id: string;
-  user_id?: string;     // opcional (no hay login real)
-  routine_id: string;   // FK routines.id
-  date: string;         // ISO (no futura)
-  minutes: number;      // 1..300
-  created_at: string;   // ISO auto
-}
-
-// ---------------------------------------------------------------------
-// MOCK DATA (coherente con ERD)
-// ---------------------------------------------------------------------
-
-const ROUTINES: Routine[] = [
-  {
-    id: "r1",
-    level: "BASICO",
-    title: "Movilidad suave de mañana",
-    description: "Activa articulaciones y circulación.",
-    duration_minutes: 12,
-    intensity: "BAJA",
-    category: "MOVILIDAD",
-    thumbnail: "/assets/routines/movilidad-am.png"
-  },
-  {
-    id: "r2",
-    level: "BASICO",
-    title: "Estiramientos en silla",
-    description: "Secuencia segura usando una silla estable.",
-    duration_minutes: 10,
-    intensity: "BAJA",
-    category: "FUNCIONAL"
-  },
-  {
-    id: "r3",
-    level: "INTERMEDIO",
-    title: "Fuerza ligera con bandas",
-    description: "Tren superior e inferior con banda elástica.",
-    duration_minutes: 18,
-    intensity: "MEDIA",
-    category: "FUERZA"
-  }
-];
-
-const EXERCISES: Exercise[] = [
-  { id: "e1", name: "Rotación cervical", instructions: "Gira la cabeza suave a cada lado, sin dolor.", type: "FUNCIONAL" },
-  { id: "e2", name: "Elevación de talones", instructions: "Súbete de puntas y baja lento sujetándote.", type: "EQUILIBRIO" },
-  { id: "e3", name: "Remo con banda", instructions: "Tira de la banda hacia el torso con espalda recta.", type: "FUERZA" },
-];
-
-const ROUTINE_EXERCISES: RoutineExercise[] = [
-  { id: "re1", routine_id: "r1", exercise_id: "e1", order_index: 0, duration_seconds: 45 },
-  { id: "re2", routine_id: "r1", exercise_id: "e2", order_index: 1, duration_seconds: 45 },
-  { id: "re3", routine_id: "r2", exercise_id: "e1", order_index: 0, repetitions: 8 },
-  { id: "re4", routine_id: "r3", exercise_id: "e3", order_index: 0, repetitions: 12 },
-];
-
-let PROGRESS: ProgressRecord[] = [];
 
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
 
-// ---------------------------------------------------------------------
-// API simulada (mapea a los endpoints previstos)
-// ---------------------------------------------------------------------
+const API_BASE = import.meta.env.VITE_API_BASE as string;
 
-/** GET /api/rutinas?nivel=basico|intermedio */
-export async function getRoutines(level?: "basico" | "intermedio"): Promise<Routine[]> {
-  await delay();
-  if (!level) return ROUTINES.slice();
-  const L: Level = level === "basico" ? "BASICO" : "INTERMEDIO";
-  return ROUTINES.filter(r => r.level === L);
-}
-
-/** GET /api/rutinas/:id  (devuelve rutina + ejercicios en orden) */
-export interface RoutineDetail extends Routine {
-  exercises: Array<Exercise & { order_index: number; repetitions?: number; duration_seconds?: number }>;
-}
-
-export async function getRoutineById(id: string): Promise<RoutineDetail | null> {
-  await delay();
-  const base = ROUTINES.find(r => r.id === id);
-  if (!base) return null;
-  const join = ROUTINE_EXERCISES
-    .filter(x => x.routine_id === id)
-    .sort((a, b) => a.order_index - b.order_index)
-    .map(x => {
-      const ex = EXERCISES.find(e => e.id === x.exercise_id)!;
-      return { ...ex, order_index: x.order_index, repetitions: x.repetitions, duration_seconds: x.duration_seconds };
-    });
-
-  return { ...base, exercises: join };
-}
-
-/** POST /api/progreso { date, minutes, routineId } */
-export async function postProgress(input: { user_id?: string; routine_id: string; date: string; minutes: number }): Promise<ProgressRecord> {
-  await delay();
-  const now = new Date().toISOString();
-  const rec: ProgressRecord = {
-    id: `p_${Math.random().toString(36).slice(2, 9)}`,
-    user_id: input.user_id,
-    routine_id: input.routine_id,
-    date: input.date,
-    minutes: input.minutes,
-    created_at: now
-  };
-  PROGRESS = [rec, ...PROGRESS];
-  return rec;
-}
+type Json = Record<string, unknown>;
 
 /** (placeholder para futuro) GET /api/progreso/semana?desde=YYYY-MM-DD */
 export async function getWeeklySummary(/* desde: string */): Promise<{ totalMinutes: number; sessions: number }> {
@@ -151,4 +15,116 @@ export async function getWeeklySummary(/* desde: string */): Promise<{ totalMinu
   const totalMinutes = 0;
   const sessions = 0;
   return { totalMinutes, sessions };
+}
+
+/* ------------------ */
+
+const asQuery = (params: Record<string, string | number | undefined | null>) => Object.entries(params)
+  .filter(([, v]) => v !== undefined && v !== null && `${v}` !== "")
+  .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+  .join("&");
+
+async function fetchJSON<T>(input: string, init?: RequestInit): Promise<T>{
+  const res = await fetch(input, {
+    headers: {"Content-Type": "application/json", Accept: "application/json"},
+    ...init
+  });
+  if(!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
+  return (await res.json()) as T;
+}
+
+/* --- ENDPOINTS MULTICOMPONENT ROUTINE --- */
+
+// GET /api/multicomponent-routines
+export async function getMultiComponentRoutines(): Promise<MultiComponentRoutine[]> {
+  return fetchJSON<MultiComponentRoutine[]>(`${API_BASE}/api/multicomponent-routines`);
+}
+
+// GET /api/multicomponent-routines/intensity/{intensityLevel}
+export async function getMultiComponentRoutinesByIntensity(intensityLevel: string): Promise<MultiComponentRoutine[]> {
+  return fetchJSON<MultiComponentRoutine[]>(`${API_BASE}/api/multicomponent-routines/intensity/${intensityLevel}`);
+}
+
+// GET /api/multicomponent-routines/generate
+export async function generateMultiComponentRoutine(args: {age: number; preferredIntensity?: string}): Promise<MultiComponentRoutine> {
+  const q = asQuery({age: args.age, preferredIntensity: args.preferredIntensity});
+  return fetchJSON<MultiComponentRoutine>(`${API_BASE}/api/multicomponent-routines/generate?${q}`);
+}
+
+// GET /api/multicomponent-routines/daily-routine
+export async function getDailyMultiComponentRoutine(args: {age: number; preferredIntensity?: string}): Promise<MultiComponentRoutine>{
+  const q = asQuery({age: args.age, preferredIntensity: args.preferredIntensity});
+  return fetchJSON<MultiComponentRoutine>(`${API_BASE}/api/multicomponent-routines/daily-routine?${q}`);
+}
+
+// GET /api/multicomponent-routines/age-group/{ageGroup}
+export async function getMultiComponentRoutinesByAgeGroup(ageGroup: string): Promise<MultiComponentRoutine[]>{
+  return fetchJSON<MultiComponentRoutine[]>(`${API_BASE}/api/multicomponent-routines/age-group/${ageGroup}`);
+}
+
+//! No veo el GET para id nose si no existe o si es el de /api/routines/{id}
+// Me lo invento
+export async function getMultiComponentRoutineById(id: number): Promise<MultiComponentRoutine | null>{
+  const list = await getMultiComponentRoutines();
+  return list.find((r) => r.id === id) ?? null;
+}
+
+/* --- ENDPOINTS ROUTINE --- */
+
+// GET /api/routines
+export async function getSimpleRoutines(params?:{categoryId?: number; intensityId?: number}): Promise<RoutineSimple[]> {
+  const q = params ? `?${asQuery(params)}` : "";
+  return fetchJSON<RoutineSimple[]>(`${API_BASE}/api/routines${q}`);
+}
+
+// GET /api/routines/{id}
+export async function getSimpleRoutineById(id: number): Promise<RoutineSimple>{
+  return fetchJSON<RoutineSimple>(`${API_BASE}/api/routines/${id}`);
+}
+
+/* ---- ENDPOINTS EXERCISE ---- */
+
+// GET /api/exercises
+export async function getExercises(params?: {
+  categoryId?: number;
+  intensityId?: number;
+  exerciseTypeId?: number;
+  locationType?: LocationType;
+}): Promise<ExerciseLite[]> {
+  const q = params ? `?${asQuery(params)}` : "";
+  return fetchJSON<ExerciseLite[]>(`${API_BASE}/api/exercises${q}`);  
+}
+
+// GET /api/exercises/{id}
+export async function getExerciseById(id: number): Promise<ExerciseDetail>{
+  return fetchJSON<ExerciseDetail>(`${API_BASE}/api/exercises/${id}`);
+}
+
+// GET /api/exercises/home
+export async function getHomeExercises(params?: {categoryId?: number; intensityId?: number}): Promise<ExerciseLite[]> {
+  const q = params ? `?${asQuery(params)}` : "";
+  return fetchJSON<ExerciseLite[]>(`${API_BASE}/api/exercises/home${q}`);
+}
+
+// GET /api/exercises/gym
+export async function getGymExercises(params?: {categoryId?: number; intensityId?: number}): Promise<ExerciseLite[]> {
+  const q = params ? `?${asQuery(params)}` : "";
+  return fetchJSON<ExerciseLite[]>(`${API_BASE}/api/exercises/gym${q}`);
+}
+
+// GET /api/exercises/category/{categoryId}
+export async function getExercisesByCategory(categoryId: number, locationType?: LocationType): Promise<ExerciseLite[]> {
+  const q = locationType ? `?${asQuery({locationType})}` : "";
+  return fetchJSON<ExerciseLite[]>(`${API_BASE}/api/exercises/category/${categoryId}${q}`);
+}
+
+
+/* ---- ENDPOINTS EXERCISE ---- */
+
+// POST /api/me/activities
+export async function postActivity(body: {activityType: string; relatedEntityId: number}): Promise<Json> {
+    return fetchJSON<Json>(`${API_BASE}/api/me/activities`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
 }
