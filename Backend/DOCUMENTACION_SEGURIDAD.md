@@ -167,10 +167,9 @@ spring:
 ### Configuración de JWT
 
 ```yaml
-jwt:
-  secret: ${JWT_SECRET:VitalApp2024SecretKeyForJWTTokenGeneration!@#$%}
-  expiration: 604800000  # 7 días en milisegundos
-  refresh-expiration: 2592000000  # 30 días en milisegundos
+app:
+  jwtSecret: ${JWT_SECRET:VitalApp2024SecretKeyForJWTTokenGenerationWithHS512AlgorithmRequiresAtLeast512BitsForSecureHashing}
+  jwtExpirationInMs: 604800000  # 7 días en milisegundos
 ```
 
 ### Estructura del Token
@@ -322,7 +321,7 @@ window.location.href = 'http://localhost:8080/oauth2/authorization/google';
 
 ```bash
 # JWT Configuration
-JWT_SECRET=VitalApp2024SecretKeyForJWTTokenGeneration!@#$%
+JWT_SECRET=VitalApp2024SecretKeyForJWTTokenGenerationWithHS512AlgorithmRequiresAtLeast512BitsForSecureHashing
 JWT_EXPIRATION=604800000
 
 # OAuth2 Google

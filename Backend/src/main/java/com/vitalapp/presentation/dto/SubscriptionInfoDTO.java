@@ -24,7 +24,7 @@ public class SubscriptionInfoDTO {
         this.status = status;
         this.startDate = startDate;
         this.endDate = endDate;
-        this.isActive = LocalDateTime.now().isBefore(endDate) && "ACTIVE".equals(status);
+        this.isActive = endDate != null && LocalDateTime.now().isBefore(endDate) && "ACTIVE".equals(status);
         this.isPremium = "Premium".equalsIgnoreCase(planName);
     }
     
@@ -68,7 +68,7 @@ public class SubscriptionInfoDTO {
     
     public void setStatus(String status) {
         this.status = status;
-        this.isActive = LocalDateTime.now().isBefore(endDate) && "ACTIVE".equals(status);
+        this.isActive = endDate != null && LocalDateTime.now().isBefore(endDate) && "ACTIVE".equals(status);
     }
     
     public LocalDateTime getStartDate() {
@@ -85,7 +85,7 @@ public class SubscriptionInfoDTO {
     
     public void setEndDate(LocalDateTime endDate) {
         this.endDate = endDate;
-        this.isActive = LocalDateTime.now().isBefore(endDate) && "ACTIVE".equals(status);
+        this.isActive = endDate != null && LocalDateTime.now().isBefore(endDate) && "ACTIVE".equals(status);
     }
     
     public boolean isActive() {

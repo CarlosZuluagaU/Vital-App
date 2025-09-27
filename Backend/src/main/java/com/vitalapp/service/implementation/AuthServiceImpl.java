@@ -86,6 +86,8 @@ public class AuthServiceImpl implements AuthService {
         user.setAge(signUpRequest.getAge());
         user.setPhone(signUpRequest.getPhone());
         user.setProvider(UserEntity.AuthProvider.LOCAL);
+        // Establecer createdAt explícitamente para asegurar que no sea null
+        user.setCreatedAt(LocalDateTime.now());
         
         UserEntity savedUser = userRepository.save(user);
         
@@ -138,26 +140,29 @@ public class AuthServiceImpl implements AuthService {
         userInfo.setAge(user.getAge());
         userInfo.setPhone(user.getPhone());
         userInfo.setProvider(user.getProvider().toString());
-        userInfo.setCreatedAt(user.getCreatedAt());
+        // Validación para evitar NullPointerException con fechas
+        userInfo.setCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt() : LocalDateTime.now());
         
-        // Obtener suscripción activa
-        Optional<UserSubscriptionEntity> activeSubscription = userSubscriptionRepository
-                .findActiveSubscriptionsByUserId(user.getId(), LocalDateTime.now())
-                .stream()
-                .findFirst();
-        
-        if (activeSubscription.isPresent()) {
-            UserSubscriptionEntity sub = activeSubscription.get();
-            SubscriptionInfoDTO subInfo = new SubscriptionInfoDTO();
-            subInfo.setId(sub.getId());
-            subInfo.setPlanName(sub.getPlan().getName());
-            subInfo.setPlanDescription(sub.getPlan().getDescription());
-            subInfo.setPrice(sub.getPlan().getPrice());
-            subInfo.setStatus(sub.getStatus().toString());
-            subInfo.setStartDate(sub.getStartDate());
-            subInfo.setEndDate(sub.getEndDate());
+        // Obtener suscripción activa - validar que user.getId() no sea null
+        if (user.getId() != null) {
+            Optional<UserSubscriptionEntity> activeSubscription = userSubscriptionRepository
+                    .findActiveSubscriptionsByUserId(user.getId(), LocalDateTime.now())
+                    .stream()
+                    .findFirst();
             
-            userInfo.setCurrentSubscription(subInfo);
+            if (activeSubscription.isPresent()) {
+                UserSubscriptionEntity sub = activeSubscription.get();
+                SubscriptionInfoDTO subInfo = new SubscriptionInfoDTO();
+                subInfo.setId(sub.getId());
+                subInfo.setPlanName(sub.getPlan().getName());
+                subInfo.setPlanDescription(sub.getPlan().getDescription());
+                subInfo.setPrice(sub.getPlan().getPrice());
+                subInfo.setStatus(sub.getStatus().toString());
+                subInfo.setStartDate(sub.getStartDate());
+                subInfo.setEndDate(sub.getEndDate());
+                
+                userInfo.setCurrentSubscription(subInfo);
+            }
         }
         
         return userInfo;
