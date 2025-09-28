@@ -27,7 +27,7 @@ export interface MultiComponentRoutine {
   id: number;
   title: string;
   description: string;
-  totalDurationMinutes: number;
+  totalDurationMinutes?: number;
   intensityLevel: string;
   ageGroup: string;
   warmUpExercises: ExerciseLite[];

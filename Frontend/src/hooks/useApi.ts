@@ -4,7 +4,7 @@ export type Level = "BASICO" | "INTERMEDIO";
 
 const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
 
-const API_BASE = import.meta.env.VITE_API_BASE as string;
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080"; //!luego quitar el localhost quemado
 
 type Json = Record<string, unknown>;
 
@@ -33,6 +33,29 @@ async function fetchJSON<T>(input: string, init?: RequestInit): Promise<T>{
   return (await res.json()) as T;
 }
 
+function secondsFromExercise(e: ExerciseLite): number {
+  const perSet = e.durationSeconds > 0 ? e.durationSeconds : 0;
+  const sets = e.sets > 0 ? e.sets : 1;
+  return perSet * sets;
+}
+
+export function estimateRoutineMinutes(r: MultiComponentRoutine): number {
+  if (typeof r.totalDurationMinutes === "number" && r.totalDurationMinutes > 0) return r.totalDurationMinutes;
+  const groups: (keyof MultiComponentRoutine)[] = [
+    "warmUpExercises",
+    "strengthExercises",
+    "balanceExercises",
+    "flexibilityExercises",
+    "cardioExercises",
+    "coolDownExercises",
+  ];
+  const totalSec = groups.reduce((acc, key) => {
+    const list = r[key] as unknown;
+    return acc + (Array.isArray(list) ? (list as ExerciseLite[]).reduce((s, ex) => s + secondsFromExercise(ex), 0) : 0);
+  }, 0);
+  return Math.max(1, Math.ceil(totalSec / 60));
+}
+
 /* --- ENDPOINTS MULTICOMPONENT ROUTINE --- */
 
 // GET /api/multicomponent-routines
@@ -46,8 +69,8 @@ export async function getMultiComponentRoutinesByIntensity(intensityLevel: strin
 }
 
 // GET /api/multicomponent-routines/generate
-export async function generateMultiComponentRoutine(args: {age: number; preferredIntensity?: string}): Promise<MultiComponentRoutine> {
-  const q = asQuery({age: args.age, preferredIntensity: args.preferredIntensity});
+export async function generateMultiComponentRoutine(args: {age: number; preferredIntensity?: string; locationType?: LocationType}): Promise<MultiComponentRoutine> {
+  const q = asQuery({age: args.age, preferredIntensity: args.preferredIntensity, locationType: args.locationType});
   return fetchJSON<MultiComponentRoutine>(`${API_BASE}/api/multicomponent-routines/generate?${q}`);
 }
 

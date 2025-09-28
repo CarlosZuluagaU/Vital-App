@@ -1,15 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import React from "react";
 
 type Props = {
   id: number;
   title: string;
-  totalDurationMinutes: number;
+  minutes: number;
   intensityLevel?: string;
   thumbnailUrl?: string | null;
 };
 
-export default function RoutineCard({ id, title, totalDurationMinutes, intensityLevel, thumbnailUrl }: Props) {
+export default function RoutineCard({ id, title, minutes, intensityLevel, thumbnailUrl }: Props) {
   const navigate = useNavigate();
 
   return (
@@ -33,7 +32,7 @@ export default function RoutineCard({ id, title, totalDurationMinutes, intensity
         <div className="p-3 md:p-4">
           <h3 className="text-base md:text-lg font-semibold text-[var(--fg)]">{title}</h3>
           <p className="mt-1 text-sm md:text-[15px] text-[var(--fg-muted)]">
-            {totalDurationMinutes} min{intensityLevel ? ` · ${intensityLevel.toLowerCase()}` : ""}
+            {minutes} min{intensityLevel ? ` · ${intensityLevel}` : ""}
           </p>
 
           <div className="mt-3 md:mt-4 flex items-center gap-2">

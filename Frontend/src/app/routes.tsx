@@ -1,4 +1,3 @@
-// src/app/routes.tsx
 import React from "react";
 import { createBrowserRouter } from "react-router-dom";
 import App from "../App";
@@ -8,6 +7,7 @@ import OnboardingWizard from "../pages/Onboarding/OnboardingWizard";
 import RoutineDetail from "../pages/RoutineDetail";
 import WeeklySummary from "../pages/WeeklySummary";
 import { RequireProfile } from "../routes/guards/RequireProfile";
+import TraditionalAuth from "../pages/TraditionalAuth";
 
 export const router = createBrowserRouter([
   {
@@ -15,6 +15,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/welcome", element: <Welcome /> },
       { path: "/onboarding", element: <OnboardingWizard /> },
+      { path: "/auth/traditional", element: <TraditionalAuth /> },
       {
         element: <RequireProfile />,
         children: [
