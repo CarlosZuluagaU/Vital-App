@@ -1,5 +1,25 @@
 # VitalApp API - Guía de Endpoints para Pruebas
 
+## ⚠️ Comandos para PowerShell
+
+Si estás usando **PowerShell**, usa estos comandos en lugar de curl:
+
+```powershell
+# Para GET requests
+Invoke-WebRequest -Uri "http://localhost:8080/api/routines" -Headers @{"Authorization"="Bearer TU_JWT_TOKEN"}
+
+# Para POST requests
+$body = @{
+    username = "testuser"
+    email = "test@example.com"
+    password = "123456"
+    name = "Test User"
+    age = 65
+} | ConvertTo-Json
+
+Invoke-WebRequest -Uri "http://localhost:8080/api/auth/register" -Method POST -Body $body -ContentType "application/json"
+```
+
 ## 🔐 Autenticación
 
 ### 1. Registro de Usuario
@@ -169,6 +189,11 @@ curl -X GET "http://localhost:8080/api/routines?category=Cardio" \
 ```bash
 curl -X GET "http://localhost:8080/api/routines?intensity=Bajo" \
   -H "Authorization: Bearer TU_JWT_TOKEN_AQUI"
+```
+
+**PowerShell:**
+```powershell
+Invoke-WebRequest -Uri "http://localhost:8080/api/routines?intensity=Suave" -Headers @{"Authorization"="Bearer TU_JWT_TOKEN_AQUI"}
 ```
 
 ## 💪 Ejercicios
