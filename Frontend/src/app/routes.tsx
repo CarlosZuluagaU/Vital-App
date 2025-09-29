@@ -7,7 +7,6 @@ import OnboardingWizard from "../pages/Onboarding/OnboardingWizard";
 import RoutineDetail from "../pages/RoutineDetail";
 import WeeklySummary from "../pages/WeeklySummary";
 import { RequireProfile } from "../routes/guards/RequireProfile";
-import TraditionalAuth from "../pages/TraditionalAuth";
 
 export const router = createBrowserRouter([
   {
@@ -15,7 +14,6 @@ export const router = createBrowserRouter([
     children: [
       { path: "/welcome", element: <Welcome /> },
       { path: "/onboarding", element: <OnboardingWizard /> },
-      { path: "/auth/traditional", element: <TraditionalAuth /> },
       {
         element: <RequireProfile />,
         children: [

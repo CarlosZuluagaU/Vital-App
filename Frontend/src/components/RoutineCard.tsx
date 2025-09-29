@@ -21,7 +21,13 @@ export default function RoutineCard({ id, title, minutes, intensityLevel, thumbn
       >
         <div className="aspect-[16/9] w-full bg-[var(--track)]">
           {thumbnailUrl ? (
-            <img src={thumbnailUrl} alt="" className="block h-full w-full object-cover" loading="lazy" decoding="async" />
+            <img
+              src={thumbnailUrl}
+              alt=""
+              className="block h-full w-full object-cover"
+              loading="lazy"
+              decoding="async"
+            />
           ) : (
             <div className="h-full w-full grid place-content-center">
               <span className="text-[var(--fg-muted)] text-sm">Vista previa</span>

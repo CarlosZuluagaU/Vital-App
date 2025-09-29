@@ -1,153 +1,431 @@
-import type {ExerciseLite, ExerciseDetail, MultiComponentRoutine, RoutineSimple, LocationType} from '../types/InterfaceRoutines';
+import type {
+  ApiEnvelope,
+  MaybeEnveloped,
+  AuthResponse,
+  RegisterRequestDTO,
+  UserDTO,
+  RoutineSummaryDTO,
+  RoutineDetailDTO,
+  ExerciseSummaryDTO,
+  ExerciseDetailDTO,
+  MultiComponentRoutineDTO,
+  ActivityLogRequestDTO,
+  ActivityLogConfirmationDTO,
+  CategoryDTO,
+  IntensityDTO,
+  ExerciseTypeDTO,
+  SubscriptionPlanDTO,
+  LocationType,
+  WeeklySummary,
+} from "../types/InterfaceRoutines";
 
-export type Level = "BASICO" | "INTERMEDIO";
 
-const delay = (ms = 350) => new Promise((r) => setTimeout(r, ms));
+function normalizeRoutineDetail(raw: any): RoutineDetailDTO & { exercises: ExerciseSummaryDTO[] } {
+  const exercises: ExerciseSummaryDTO[] =
+    raw?.exercises ??
+    raw?.exerciseList ??
+    raw?.exerciseDTOs ??
+    raw?.items ??
+    [];
 
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080"; //!luego quitar el localhost quemado
-
-type Json = Record<string, unknown>;
-
-/** (placeholder para futuro) GET /api/progreso/semana?desde=YYYY-MM-DD */
-export async function getWeeklySummary(/* desde: string */): Promise<{ totalMinutes: number; sessions: number }> {
-  await delay();
-  // Aún no implementado real; regresamos 0 para no bloquear UI
-  const totalMinutes = 0;
-  const sessions = 0;
-  return { totalMinutes, sessions };
+  return {
+    id: raw?.id,
+    title: raw?.title ?? raw?.name ?? "Rutina",
+    description: raw?.description,
+    durationMinutes: raw?.durationMinutes ?? raw?.estimatedMinutes,
+    intensityName: raw?.intensityName ?? raw?.intensity ?? raw?.intensityLevel,
+    categoryName: raw?.categoryName ?? raw?.category,
+    videoUrl: raw?.videoUrl,
+    thumbnailUrl: raw?.thumbnailUrl,
+    // garantizamos siempre exercises
+    exercises,
+  };
 }
 
-/* ------------------ */
 
-const asQuery = (params: Record<string, string | number | undefined | null>) => Object.entries(params)
-  .filter(([, v]) => v !== undefined && v !== null && `${v}` !== "")
-  .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-  .join("&");
+type AnyLogin = 
+  | { email: string; password: string }
+  | { username: string; password: string }
+  | { usernameOrEmail: string; password: string };
 
-async function fetchJSON<T>(input: string, init?: RequestInit): Promise<T>{
-  const res = await fetch(input, {
-    headers: {"Content-Type": "application/json", Accept: "application/json"},
-    ...init
+
+// Base y storage
+const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8080";
+// 'header' = Bearer en Authorization | 'cookie' = sesión por cookie HttpOnly
+const AUTH_MODE = (import.meta.env.VITE_AUTH_MODE || "header") as "header" | "cookie";
+const USE_COOKIES = AUTH_MODE === "cookie";
+
+const TOKEN_KEY = "auth:token";
+const REFRESH_KEY = "auth:refresh";
+
+export function setAuthToken(token: string | null) {
+  if (token) localStorage.setItem(TOKEN_KEY, token);
+  else localStorage.removeItem(TOKEN_KEY);
+}
+export function getAuthToken() { return localStorage.getItem(TOKEN_KEY); }
+
+export function setRefreshToken(token: string | null) {
+  if (token) localStorage.setItem(REFRESH_KEY, token);
+  else localStorage.removeItem(REFRESH_KEY);
+}
+export function getRefreshToken() { return localStorage.getItem(REFRESH_KEY); }
+
+// Utilidades
+const asQuery = (params: Record<string, string | number | boolean | undefined | null>) =>
+  Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null && `${v}` !== "")
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
+    .join("&");
+
+const param = <T extends string | number | boolean | undefined | null>(v: T) =>
+  v !== undefined && v !== null && `${v}` !== "" ? v : undefined;
+
+type HttpMethod = "GET" | "POST" | "PUT" | "DELETE";
+
+async function coreFetch<T>(path: string, method: HttpMethod = "GET", body?: unknown, extra?: RequestInit): Promise<T> {
+  const token = getAuthToken();
+
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    ...(extra?.headers as Record<string, string>),
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+  };
+
+  const res = await fetch(`${API_BASE}${path}`, {
+    method,
+    headers,
+    credentials: USE_COOKIES ? "include" : "omit",
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+    ...extra,
   });
-  if(!res.ok) throw new Error(`HTTP ${res.status} - ${res.statusText}`);
-  return (await res.json()) as T;
+
+
+  // Manejo de 401 con posible refresh
+  if (res.status === 401 && getRefreshToken()) {
+    const ok = await tryRefreshToken();
+    if (ok) {
+      // Reintento 1 vez
+      return coreFetch<T>(path, method, body, extra);
+    }
+  }
+
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`);
+  }
+  if (res.status === 204) return undefined as unknown as T;
+
+  const json = (await res.json()) as MaybeEnveloped<T>;
+
+  // Si viene envuelto como { success, data }
+  if (isEnvelope(json)) {
+    return (json.data ?? undefined) as T;
+  }
+  // Si viene plano, retorna tal cual
+  return json as T;
 }
 
-function secondsFromExercise(e: ExerciseLite): number {
-  const perSet = e.durationSeconds > 0 ? e.durationSeconds : 0;
-  const sets = e.sets > 0 ? e.sets : 1;
-  return perSet * sets;
+function isEnvelope<T>(v: any): v is ApiEnvelope<T> {
+  return v && typeof v === "object" && "success" in v && "data" in v;
 }
 
-export function estimateRoutineMinutes(r: MultiComponentRoutine): number {
-  if (typeof r.totalDurationMinutes === "number" && r.totalDurationMinutes > 0) return r.totalDurationMinutes;
-  const groups: (keyof MultiComponentRoutine)[] = [
-    "warmUpExercises",
-    "strengthExercises",
-    "balanceExercises",
-    "flexibilityExercises",
-    "cardioExercises",
-    "coolDownExercises",
-  ];
-  const totalSec = groups.reduce((acc, key) => {
-    const list = r[key] as unknown;
-    return acc + (Array.isArray(list) ? (list as ExerciseLite[]).reduce((s, ex) => s + secondsFromExercise(ex), 0) : 0);
-  }, 0);
-  return Math.max(1, Math.ceil(totalSec / 60));
+/** ---------- Helper: refresh token (si el backend lo expone) ---------- */
+async function tryRefreshToken(): Promise<boolean> {
+  const rt = getRefreshToken();
+  if (!rt) return false;
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      credentials: USE_COOKIES ? "include" : "omit",
+      body: JSON.stringify({ refreshToken: rt }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json().catch(() => ({}));
+    const { token, refreshToken } = extractAuthTokens(data, res);
+    if (token) setAuthToken(token);
+    if (refreshToken) setRefreshToken(refreshToken);
+    return !!token;
+  } catch {
+    setAuthToken(null);
+    setRefreshToken(null);
+    return false;
+  }
 }
 
-/* --- ENDPOINTS MULTICOMPONENT ROUTINE --- */
+/** ---------- Auth extractors: soporta doc de pruebas y doc de seguridad ---------- */
+// helpers de extracción tolerantes (token con nombres distintos)
+function extractAuthTokens(resp: AuthResponse, res?: Response): { token?: string; refreshToken?: string } {
+  const payload = (resp && typeof resp === "object" && "success" in resp && "data" in resp) ? (resp as any).data : resp;
+  const token =
+    payload?.token ??
+    payload?.accessToken ??
+    payload?.jwt ??
+    payload?.id_token ??
+    payload?.idToken ??
+    undefined;
 
-// GET /api/multicomponent-routines
-export async function getMultiComponentRoutines(): Promise<MultiComponentRoutine[]> {
-  return fetchJSON<MultiComponentRoutine[]>(`${API_BASE}/api/multicomponent-routines`);
+  const refreshToken = payload?.refreshToken ?? payload?.refresh_token ?? undefined;
+
+  // algunos backends envían el bearer en header
+  let headerToken: string | undefined;
+  if (res) {
+    const h = res.headers.get("authorization") || res.headers.get("Authorization");
+    if (h?.toLowerCase().startsWith("bearer ")) headerToken = h.slice(7);
+  }
+  return { token: token ?? headerToken, refreshToken };
 }
 
-// GET /api/multicomponent-routines/intensity/{intensityLevel}
-export async function getMultiComponentRoutinesByIntensity(intensityLevel: string): Promise<MultiComponentRoutine[]> {
-  return fetchJSON<MultiComponentRoutine[]>(`${API_BASE}/api/multicomponent-routines/intensity/${intensityLevel}`);
+function extractUser(resp: AuthResponse): UserDTO | undefined {
+  const payload = (resp && typeof resp === "object" && "success" in resp && "data" in resp) ? (resp as any).data : resp;
+  return payload?.user;
 }
 
-// GET /api/multicomponent-routines/generate
-export async function generateMultiComponentRoutine(args: {age: number; preferredIntensity?: string; locationType?: LocationType}): Promise<MultiComponentRoutine> {
-  const q = asQuery({age: args.age, preferredIntensity: args.preferredIntensity, locationType: args.locationType});
-  return fetchJSON<MultiComponentRoutine>(`${API_BASE}/api/multicomponent-routines/generate?${q}`);
+/** ---------- OAuth2 helpers (según guía OAuth2) ---------- */
+// El backend redirige a: http://localhost:3000/oauth2/redirect?token=JWT...
+// Guardamos el token y limpiamos la URL.  :contentReference[oaicite:3]{index=3}
+export function handleOAuth2Redirect() {
+  const url = new URL(window.location.href);
+  const token = url.searchParams.get("token");
+  if (token) {
+    setAuthToken(token);
+    // opcional: si también envías refreshToken como query, tómalo aquí
+    url.searchParams.delete("token");
+    window.history.replaceState({}, document.title, url.pathname + url.search);
+  }
 }
 
-// GET /api/multicomponent-routines/daily-routine
-export async function getDailyMultiComponentRoutine(args: {age: number; preferredIntensity?: string}): Promise<MultiComponentRoutine>{
-  const q = asQuery({age: args.age, preferredIntensity: args.preferredIntensity});
-  return fetchJSON<MultiComponentRoutine>(`${API_BASE}/api/multicomponent-routines/daily-routine?${q}`);
+/** ---------- Public API ---------- */
+// Auth
+export async function register(payload: any): Promise<UserDTO> {
+  const username =
+    payload.username || payload.name || (payload.email ? payload.email.split("@")[0] : "usuario");
+
+  const res = await fetch(`${API_BASE}/api/auth/register`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    credentials: USE_COOKIES ? "include" : "omit",
+    body: JSON.stringify({ ...payload, username }),
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status} ${res.statusText}`);
+  const json = await res.json().catch(() => ({}));
+  const { token, refreshToken } = extractAuthTokens(json, res);
+  if (import.meta.env.DEV) {
+    //TODO: quitar luego
+    console.debug("[auth] extractAuthTokens()", { token, refreshToken, payload: json });
+  }
+  const user = extractUser(json);
+  //TODO: Quitarluego tambien
+  if (import.meta.env.DEV) {
+    console.debug("[auth] extractUser()", user);
+  }
+
+  if (token) setAuthToken(token);
+  if (refreshToken) setRefreshToken(refreshToken);
+
+  if (!user) {
+    try { return await getMe(); } catch { return null as any; }
+  }
+  return user!;
 }
 
-// GET /api/multicomponent-routines/age-group/{ageGroup}
-export async function getMultiComponentRoutinesByAgeGroup(ageGroup: string): Promise<MultiComponentRoutine[]>{
-  return fetchJSON<MultiComponentRoutine[]>(`${API_BASE}/api/multicomponent-routines/age-group/${ageGroup}`);
+export async function login(payload: AnyLogin): Promise<UserDTO> {
+  const usernameOrEmail = (payload as any).usernameOrEmail ?? (payload as any).email ?? (payload as any).username;
+  const body = { usernameOrEmail, password: (payload as any).password };
+
+  // usamos fetch directo para poder leer headers si vienen ahí
+  const res = await fetch(`${API_BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json" },
+    credentials: USE_COOKIES ? "include" : "omit",
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(()=>"");
+    throw new Error(`HTTP ${res.status} ${res.statusText}${text ? ` — ${text}` : ""}`);
+  }
+  const json = await res.json().catch(() => ({}));
+  const { token, refreshToken } = extractAuthTokens(json, res);
+  if (import.meta.env.DEV) {
+    //TODO: quitar luego
+    console.debug("[auth] extractAuthTokens()", { token, refreshToken, payload: json });
+  }
+  const user = extractUser(json);
+  //TODO: Quitarluego tambien
+  if (import.meta.env.DEV) {
+    console.debug("[auth] extractUser()", user);
+  }
+
+  if (token) setAuthToken(token);
+  if (refreshToken) setRefreshToken(refreshToken);
+
+  // si el backend no incluyó user (común cuando usa cookie), lo pedimos a /me
+  if (!user) {
+    try { return await getMe(); } catch { return null as any; }
+  }
+  return user!;
 }
 
-//! No veo el GET para id nose si no existe o si es el de /api/routines/{id}
-// Me lo invento
-export async function getMultiComponentRoutineById(id: number): Promise<MultiComponentRoutine | null>{
-  const list = await getMultiComponentRoutines();
-  return list.find((r) => r.id === id) ?? null;
+export async function getMe(): Promise<UserDTO> {
+  return coreFetch<UserDTO>("/api/auth/me", "GET");
 }
 
-/* --- ENDPOINTS ROUTINE --- */
-
-// GET /api/routines
-export async function getSimpleRoutines(params?:{categoryId?: number; intensityId?: number}): Promise<RoutineSimple[]> {
-  const q = params ? `?${asQuery(params)}` : "";
-  return fetchJSON<RoutineSimple[]>(`${API_BASE}/api/routines${q}`);
+export function logout() {
+  setAuthToken(null);
+  setRefreshToken(null);
 }
 
-// GET /api/routines/{id}
-export async function getSimpleRoutineById(id: number): Promise<RoutineSimple>{
-  return fetchJSON<RoutineSimple>(`${API_BASE}/api/routines/${id}`);
+// OAuth2 starters (redirigen al backend)
+export function startGoogleOAuth() {
+  window.location.href = `${API_BASE}/oauth2/authorization/google`;
+}
+export function startFacebookOAuth() {
+  window.location.href = `${API_BASE}/oauth2/authorization/facebook`;
 }
 
-/* ---- ENDPOINTS EXERCISE ---- */
+// ---------- Routines ----------
+export async function getRoutines(params?: {
+  categoryId?: number;
+  intensityId?: number;
+  category?: string;   // /api/routines?category=Cardio (guía pruebas)
+  intensity?: string;  // /api/routines?intensity=Bajo (guía pruebas)
+}): Promise<RoutineSummaryDTO[]> {
+  const q = asQuery({
+    categoryId: param(params?.categoryId),
+    intensityId: param(params?.intensityId),
+    category: param(params?.category),
+    intensity: param(params?.intensity),
+  });
+  const qs = q ? `?${q}` : "";
+  return coreFetch<RoutineSummaryDTO[]>(`/api/routines${qs}`, "GET");
+}
 
-// GET /api/exercises
+export async function getRoutineById(id: number) {
+  const raw = await coreFetch<any>(`/api/routines/${id}`, "GET");
+  return normalizeRoutineDetail(raw);
+}
+
+// ---------- Exercises ----------
 export async function getExercises(params?: {
   categoryId?: number;
   intensityId?: number;
   exerciseTypeId?: number;
   locationType?: LocationType;
-}): Promise<ExerciseLite[]> {
-  const q = params ? `?${asQuery(params)}` : "";
-  return fetchJSON<ExerciseLite[]>(`${API_BASE}/api/exercises${q}`);  
+}): Promise<ExerciseSummaryDTO[]> {
+  const q = asQuery({
+    categoryId: param(params?.categoryId),
+    intensityId: param(params?.intensityId),
+    exerciseTypeId: param(params?.exerciseTypeId),
+    locationType: param(params?.locationType),
+  });
+  const qs = q ? `?${q}` : "";
+  return coreFetch<ExerciseSummaryDTO[]>(`/api/exercises${qs}`, "GET");
 }
 
-// GET /api/exercises/{id}
-export async function getExerciseById(id: number): Promise<ExerciseDetail>{
-  return fetchJSON<ExerciseDetail>(`${API_BASE}/api/exercises/${id}`);
+export async function getExerciseById(id: number): Promise<ExerciseDetailDTO> {
+  return coreFetch<ExerciseDetailDTO>(`/api/exercises/${id}`, "GET");
 }
 
-// GET /api/exercises/home
-export async function getHomeExercises(params?: {categoryId?: number; intensityId?: number}): Promise<ExerciseLite[]> {
-  const q = params ? `?${asQuery(params)}` : "";
-  return fetchJSON<ExerciseLite[]>(`${API_BASE}/api/exercises/home${q}`);
+export async function getHomeExercises(params?: { categoryId?: number; intensityId?: number; })
+: Promise<ExerciseSummaryDTO[]> {
+  const q = asQuery({
+    categoryId: param(params?.categoryId),
+    intensityId: param(params?.intensityId),
+  });
+  const qs = q ? `?${q}` : "";
+  return coreFetch<ExerciseSummaryDTO[]>(`/api/exercises/home${qs}`, "GET");
 }
 
-// GET /api/exercises/gym
-export async function getGymExercises(params?: {categoryId?: number; intensityId?: number}): Promise<ExerciseLite[]> {
-  const q = params ? `?${asQuery(params)}` : "";
-  return fetchJSON<ExerciseLite[]>(`${API_BASE}/api/exercises/gym${q}`);
+export async function getGymExercises(params?: { categoryId?: number; intensityId?: number; })
+: Promise<ExerciseSummaryDTO[]> {
+  const q = asQuery({
+    categoryId: param(params?.categoryId),
+    intensityId: param(params?.intensityId),
+  });
+  const qs = q ? `?${q}` : "";
+  return coreFetch<ExerciseSummaryDTO[]>(`/api/exercises/gym${qs}`, "GET");
 }
 
-// GET /api/exercises/category/{categoryId}
-export async function getExercisesByCategory(categoryId: number, locationType?: LocationType): Promise<ExerciseLite[]> {
-  const q = locationType ? `?${asQuery({locationType})}` : "";
-  return fetchJSON<ExerciseLite[]>(`${API_BASE}/api/exercises/category/${categoryId}${q}`);
+// ---------- Multicomponent ----------
+export async function getMultiComponentRoutines(): Promise<MultiComponentRoutineDTO[]> {
+  return coreFetch<MultiComponentRoutineDTO[]>(`/api/multicomponent-routines`, "GET");
+}
+export async function getMultiByIntensity(level: string): Promise<MultiComponentRoutineDTO[]> {
+  return coreFetch<MultiComponentRoutineDTO[]>(`/api/multicomponent-routines/intensity/${encodeURIComponent(level)}`, "GET");
+}
+export async function generateMulti(args: { age: number; preferredIntensity?: string; locationType?: LocationType; })
+: Promise<MultiComponentRoutineDTO> {
+  const q = asQuery({
+    age: args.age,
+    preferredIntensity: param(args.preferredIntensity),
+    locationType: param(args.locationType),
+  });
+  return coreFetch<MultiComponentRoutineDTO>(`/api/multicomponent-routines/generate?${q}`, "GET");
+}
+export async function getDailyMulti(args: { age: number; preferredIntensity?: string; })
+: Promise<MultiComponentRoutineDTO> {
+  const q = asQuery({
+    age: args.age,
+    preferredIntensity: param(args.preferredIntensity),
+  });
+  return coreFetch<MultiComponentRoutineDTO>(`/api/multicomponent-routines/daily-routine?${q}`, "GET");
+}
+export async function getMultiByAgeGroup(ageGroup: string): Promise<MultiComponentRoutineDTO[]> {
+  return coreFetch<MultiComponentRoutineDTO[]>(`/api/multicomponent-routines/age-group/${encodeURIComponent(ageGroup)}`, "GET");
 }
 
+// ---------- Activity Log ----------
+export async function postActivity(body: ActivityLogRequestDTO): Promise<ActivityLogConfirmationDTO> {
+  // En doc técnica: POST /api/me/activities retorna { status, message, newAchievements }  :contentReference[oaicite:4]{index=4}
+  return coreFetch<ActivityLogConfirmationDTO>(`/api/me/activities`, "POST", body);
+}
 
-/* ---- ENDPOINTS EXERCISE ---- */
+// ---------- Catálogos y Users (según guía de endpoints de prueba) ----------
+export async function getCategories(): Promise<CategoryDTO[]> {
+  return coreFetch<CategoryDTO[]>(`/api/categories`, "GET");
+}
+export async function getIntensities(): Promise<IntensityDTO[]> {
+  return coreFetch<IntensityDTO[]>(`/api/intensities`, "GET");
+}
+export async function getExerciseTypes(): Promise<ExerciseTypeDTO[]> {
+  return coreFetch<ExerciseTypeDTO[]>(`/api/exercise-types`, "GET");
+}
+export async function getSubscriptionPlans(): Promise<SubscriptionPlanDTO[]> {
+  return coreFetch<SubscriptionPlanDTO[]>(`/api/subscription-plans`, "GET");
+}
 
-// POST /api/me/activities
-export async function postActivity(body: {activityType: string; relatedEntityId: number}): Promise<Json> {
-    return fetchJSON<Json>(`${API_BASE}/api/me/activities`, {
-      method: "POST",
-      body: JSON.stringify(body),
-    });
+// Users (admin / gestionados)
+export async function getUserById(id: number) { return coreFetch<UserDTO>(`/api/users/${id}`, "GET"); }
+export async function updateUser(id: number, patch: Partial<UserDTO>) { return coreFetch<UserDTO>(`/api/users/${id}`, "PUT", patch); }
+export async function deleteUser(id: number) { return coreFetch<void>(`/api/users/${id}`, "DELETE"); }
+export async function subscribeUser(userId: number, planId: number) {
+  return coreFetch<void>(`/api/users/${userId}/subscribe/${planId}`, "POST");
+}
+export async function cancelSubscription(userId: number) {
+  return coreFetch<void>(`/api/users/${userId}/subscription`, "DELETE");
+}
+
+/** ---------- Utilidades UI ---------- */
+function secondsFromExercise(e: ExerciseSummaryDTO): number {
+  const perSet = e.durationSeconds && e.durationSeconds > 0 ? e.durationSeconds : 0;
+  const sets = e.sets && e.sets > 0 ? e.sets : 1;
+  return perSet * sets;
+}
+export function estimateRoutineMinutes(r: MultiComponentRoutineDTO): number {
+  if (typeof r.totalDurationMinutes === "number" && r.totalDurationMinutes > 0) return r.totalDurationMinutes;
+  const groups: (keyof MultiComponentRoutineDTO)[] = [
+    "warmUpExercises", "strengthExercises", "balanceExercises",
+    "flexibilityExercises", "cardioExercises", "coolDownExercises",
+  ];
+  const totalSec = groups.reduce((acc, key) => {
+    const list = r[key] as unknown;
+    return acc + (Array.isArray(list) ? (list as ExerciseSummaryDTO[]).reduce((s, ex) => s + secondsFromExercise(ex), 0) : 0);
+  }, 0);
+  return Math.max(1, Math.ceil(totalSec / 60));
+}
+
+// Placeholder (si luego expones progreso semanal real)
+export async function getWeeklySummary(): Promise<WeeklySummary> {
+  return { totalMinutes: 0, sessions: 0 };
 }

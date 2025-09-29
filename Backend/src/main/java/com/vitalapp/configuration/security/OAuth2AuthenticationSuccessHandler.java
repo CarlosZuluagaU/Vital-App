@@ -175,7 +175,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     private boolean isAuthorizedRedirectUri(String uri) {
         if (authorizedRedirectUris == null || authorizedRedirectUris.isEmpty()) {
             // Default to localhost if no configuration is provided
-            return uri.startsWith("http://localhost:3000/oauth2/redirect");
+            return uri.startsWith("http://localhost:5173/oauth2/redirect");
         }
         
         for (String authorizedUri : authorizedRedirectUris) {
