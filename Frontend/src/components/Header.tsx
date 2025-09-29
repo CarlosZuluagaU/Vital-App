@@ -1,10 +1,14 @@
 import React from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { usePrefs, type FontSize } from "../context/Preferences";
+import { useAuth } from "../context/Auth";
 
 export default function Header() {
   const { fontSize, setFontSize, highContrast, setHighContrast } = usePrefs();
-  const { pathname } = useLocation();
+  const { user } = useAuth();
+
+  const name = (user as any)?.name || (user as any)?.username || "¡bienvenid@!";
+  const greeting = `Hola, ${name}. ¡Esforcémonos al máximo hoy!`;
 
   const SizeBtn: React.FC<{ label: string; value: FontSize }> = ({ label, value }) => (
     <button
@@ -22,12 +26,8 @@ export default function Header() {
   );
 
   return (
-    <header
-      role="banner"
-      className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--card-elevated)]"
-    >
+    <header role="banner" className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--card-elevated)]">
       <div className="mx-auto w-full max-w-screen-lg px-3 sm:px-4 py-3">
-        {/* wrap para evitar overflow en móvil */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 whitespace-nowrap">
             <Link
@@ -37,17 +37,9 @@ export default function Header() {
             >
               VitalApp
             </Link>
-            {pathname !== "/" && pathname !== "/welcome" && (
-              <>
-                <span className="text-sm text-[var(--fg-muted)]" aria-hidden="true">/</span>
-                <span className="text-sm text-[var(--fg-muted)] truncate max-w-[45vw] sm:max-w-[50vw]">
-                  {pathname.replace(/\//g, " / ").trim()}
-                </span>
-              </>
-            )}
+            <span className="text-sm text-[var(--fg-muted)] hidden sm:inline">— {greeting}</span>
           </div>
 
-          {/* Controles */}
           <div className="ml-auto flex flex-wrap items-center gap-2">
             <div role="group" aria-label="Tamaño de letra" className="flex items-center gap-2">
               <SizeBtn label="SM" value="sm" />

@@ -49,24 +49,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = useCallback(async (payload: LoginRequestDTO) => {
     setError(null);
-    const u = await apiLogin(payload).catch((e: any) => {
+    try {
+      const u = await apiLogin(payload);
+      setToken(getAuthToken());
+      setUser(u || null);
+      return u;
+    } catch (e: any) {
       setError(e?.message || "No se pudo iniciar sesión");
-      return null;
-    });
-    setToken(getAuthToken());
-    setUser(u || null);
-    return u;
+      throw e; // ⬅️ IMPORTANTE: relanza el error para que StepOAuth lo capture
+    }
   }, []);
 
   const register = useCallback(async (payload: RegisterRequestDTO) => {
     setError(null);
-    const u = await apiRegister(payload).catch((e: any) => {
+    try {
+      const u = await apiRegister(payload);
+      setToken(getAuthToken());
+      setUser(u || null);
+      return u;
+    } catch (e: any) {
       setError(e?.message || "No se pudo registrar");
-      return null;
-    });
-    setToken(getAuthToken());
-    setUser(u || null);
-    return u;
+      throw e; // ⬅️ IMPORTANTE
+    }
   }, []);
 
   const logout = useCallback(() => {

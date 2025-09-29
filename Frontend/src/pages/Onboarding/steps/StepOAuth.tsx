@@ -1,63 +1,74 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/Auth";
 
-/**
- * Primer paso del Onboarding:
- * - Botones "Continuar con Google" / "Continuar con Facebook"
- * - Formulario tradicional (tabs: Iniciar sesión / Crear cuenta)
- * - Botón "Ahora no, continuar como invitado" -> llama onContinue()
- *
- * Comportamiento:
- * - Si ya hay sesión (JWT válido), avanza automáticamente (onContinue()).
- * - Al hacer login/registro exitoso: guarda token y avanza (onContinue()).
- *
- * A11y/Estilo:
- * - Tokens de color y 44×44 en todos los controles
- * - Labels y aria-live para errores
- */
+type Props = { onContinue: () => void; onGuest: () => void };
 
-type Props = {
-  onContinue: () => void; // avanza al siguiente paso (StepName)
-};
-
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
-const buildBase = () => (BASE ? BASE.replace(/\/$/, "") : "");
-
-const oauthUrl = (provider: "google" | "facebook") =>
-  `${buildBase()}/oauth2/authorization/${provider}`;
+// Soporta ambas envs
+const API_BASE =
+  (import.meta.env.VITE_API_BASE as string) ||
+  (import.meta.env.VITE_API_BASE_URL as string) ||
+  "http://localhost:8080";
+const OAUTH_BASE = API_BASE.replace(/\/$/, "");
+const oauthUrl = (p: "google" | "facebook") => `${OAUTH_BASE}/oauth2/authorization/${p}`;
 
 const StepOAuth: React.FC<Props> = ({ onContinue }) => {
-  const { isAuth, loading, login, register } = useAuth();
+  const { isAuthenticated, loading, login, register } = useAuth();
 
-  // si ya hay sesión (p.ej. viene de OAuth) => saltar
+  // Si ya hay sesión (p. ej., regresaste del OAuth), avanza automáticamente
   useEffect(() => {
-    if (!loading && isAuth) onContinue();
-  }, [loading, isAuth, onContinue]);
+    if (!loading && isAuthenticated) onContinue();
+  }, [loading, isAuthenticated, onContinue]);
 
   const [mode, setMode] = useState<"login" | "register">("login");
-  const [email, setEmail] = useState("");
-  const [usernameOrEmail, setUsernameOrEmail] = useState("");
-  const [password, setPassword] = useState("");
-  // registro
+
+  // Campos
   const [name, setName] = useState("");
-  const [age, setAge] = useState<number | undefined>(undefined);
+  const [age, setAge] = useState<number | undefined>(undefined); // opcional
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirm, setConfirm] = useState("");
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const emailOk = useMemo(() => /\S+@\S+\.\S+/.test(email), [email]);
+  const passOk = password.trim().length > 0;
+  const confirmOk = mode === "register" ? confirm === password && confirm.length > 0 : true;
+  const nameOk = mode === "register" ? name.trim().length > 0 : true;
+
+  const canSubmit =
+    mode === "login"
+      ? emailOk && passOk
+      : nameOk && emailOk && passOk && confirmOk;
+
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError(null);
+    if (!canSubmit || submitting) return;
+
     setSubmitting(true);
+    setError(null);
+
     try {
       if (mode === "login") {
-        await login({ usernameOrEmail, password });
+        // Backend espera usernameOrEmail → usamos el email
+        await login({ usernameOrEmail: email, password });
       } else {
         await register({ name, email, password, age });
       }
+      // ⚠️ SOLO avanzamos si la llamada NO lanzó error
       onContinue();
     } catch (err: any) {
-      setError(err?.message || "No se pudo completar la operación.");
+        const msgRaw = String(err?.message ?? "");
+        const match = msgRaw.match(/HTTP\s+(\d{3})/i);
+        const status = match ? Number(match[1]) : undefined;
+
+        const msg =
+          status === 401 ? "Credenciales inválidas." :
+          status === 409 ? "Ya existe una cuenta con ese correo." :
+          status === 400 ? "Datos incompletos o inválidos." :
+          msgRaw || "No se pudo completar la operación.";
+
+        setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -70,20 +81,17 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
         Para recordar tu progreso, vincula una cuenta. También puedes continuar como invitado.
       </p>
 
-      {/* Botones sociales */}
+      {/* Botones OAuth */}
       <div className="mt-4 grid gap-3">
         <a
           href={oauthUrl("google")}
           className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
-          data-testid="oauth-google"
         >
           Continuar con Google
         </a>
-
         <a
           href={oauthUrl("facebook")}
           className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)] font-semibold"
-          data-testid="oauth-facebook"
         >
           Continuar con Facebook
         </a>
@@ -116,6 +124,7 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
           </button>
         </div>
 
+        {/* Formulario */}
         <form onSubmit={onSubmit} className="mt-4 grid gap-3" noValidate>
           {mode === "register" && (
             <>
@@ -129,6 +138,7 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
                   className="min-h-[44px] px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)]"
                 />
               </label>
+
               <label className="grid gap-1">
                 <span className="text-sm text-[var(--fg)]">Edad (opcional)</span>
                 <input
@@ -148,10 +158,7 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
               type="email"
               required
               value={email}
-              onChange={(e) => {
-                setEmail(e.target.value);
-                setUsernameOrEmail(e.target.value);
-              }}
+              onChange={(e) => setEmail(e.target.value)}
               className="min-h-[44px] px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)]"
             />
           </label>
@@ -167,27 +174,48 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
             />
           </label>
 
+          {mode === "register" && (
+            <label className="grid gap-1">
+              <span className="text-sm text-[var(--fg)]">Confirmar contraseña</span>
+              <input
+                type="password"
+                required
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] text-[var(--fg)]
+                  ${confirm.length > 0 && !confirmOk ? "border-red-500" : "border-[var(--border)]"}
+                `}
+              />
+              {confirm.length > 0 && !confirmOk && (
+                <span className="text-xs text-red-500">Las contraseñas no coinciden.</span>
+              )}
+            </label>
+          )}
+
           {error && (
-            <div role="alert" aria-live="assertive" className="text-sm text-red-500">
-              {error}
-            </div>
+            <div
+                role="alert"
+                aria-live="assertive"
+                className="rounded-lg border border-red-500/70 bg-[color:var(--danger-bg,rgba(244,63,94,.1))] text-[var(--fg)] text-sm px-3 py-2"
+              >
+                {error}
+              </div>
           )}
 
           <button
             type="submit"
-            disabled={submitting}
-            className="mt-1 min-h-[44px] px-4 rounded-lg font-semibold bg-[var(--accent)] text-[var(--bg)]"
+            disabled={!canSubmit || submitting}
+            className="mt-1 min-h-[44px] px-4 rounded-lg font-semibold bg-[var(--accent)] text-[var(--bg)] disabled:opacity-60"
           >
             {submitting ? (mode === "login" ? "Entrando…" : "Creando…") : mode === "login" ? "Entrar" : "Crear cuenta"}
           </button>
         </form>
       </div>
 
-      {/* Continuar como invitado */}
       <div className="mt-6">
         <button
           type="button"
-          onClick={onContinue}
+          onClick={() => onGuest?.()}
           className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)]"
         >
           Ahora no, continuar como invitado

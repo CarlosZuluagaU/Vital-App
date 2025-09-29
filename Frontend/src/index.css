@@ -49,7 +49,7 @@ html[data-contrast="true"]{
 html[data-contrast="false"]{
     --bg:#F5F5F5;
     --fg: #0f172a;
-    --fg-muted:#333333;
+    --fg-muted:#475569;
     --card:#ffffff;
     --card-elevated: #f8fafc;
     --track: #e5e7eb;

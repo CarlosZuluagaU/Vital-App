@@ -5,103 +5,77 @@ import { usePrefs } from "../context/Preferences";
 import { getRoutines } from "../hooks/useApi";
 import type { RoutineSummaryDTO } from "../types/InterfaceRoutines";
 import { useAuth } from "../context/Auth";
+import { A11yButton } from "../components/a11y/A11yButton"; // <-- usa tu botón accesible
 
-/**
- * Home — lista de rutinas recomendadas
- * - NO llama a la API hasta que el usuario esté autenticado (evita 403).
- * - Mapea BASICO→Suave, INTERMEDIO→Moderado (coincide con tu DB).
- * - Si el fetch con filtro devuelve 0, reintenta sin filtro.
- */
 export default function Home() {
   const nav = useNavigate();
   const { profile } = usePrefs();
   const { loading: authLoading, isAuthenticated } = useAuth();
 
   const [loading, setLoading] = React.useState(true);
-  const [items, setItems] = React.useState<RoutineSummaryDTO[]>([]);
+  const [all, setAll] = React.useState<RoutineSummaryDTO[]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
-  const intensity =
-    profile?.level === "BASICO"
-      ? "Suave"
-      : profile?.level === "INTERMEDIO"
-      ? "Moderado"
-      : undefined; // si luego usas AVANZADO → "Intenso"
+  const target =
+    profile?.level === "BASICO" ? "Suave" :
+    profile?.level === "INTERMEDIO" ? "Moderado" :
+    undefined;
 
   React.useEffect(() => {
     let mounted = true;
-
     const load = async () => {
-      // Espera a que Auth termine y sólo carga si hay sesión
       if (authLoading) return;
-      if (!isAuthenticated) {
-        if (mounted) {
-          setItems([]);
-          setError(null);
-          setLoading(false);
-        }
-        return;
-      }
-
-      setLoading(true);
-      setError(null);
-
+      if (!isAuthenticated) { setAll([]); setLoading(false); return; }
+      setLoading(true); setError(null);
       try {
-        // 1) Intento con filtro si existe
-        const data = await getRoutines(intensity ? { intensity } : undefined);
+        const a = target ? await getRoutines({ intensity: target }) : await getRoutines();
         if (!mounted) return;
-
-        if (data && data.length > 0) {
-          setItems(data);
-        } else if (intensity) {
-          // 2) Si vino vacío con filtro, reintenta sin filtro
-          const fallback = await getRoutines();
-          if (!mounted) return;
-          setItems(fallback ?? []);
+        if (a?.length) {
+          if (target) {
+            const b = await getRoutines();
+            if (!mounted) return;
+            setAll(b ?? a);
+          } else {
+            setAll(a);
+          }
         } else {
-          setItems(data ?? []);
+          const b = await getRoutines();
+          if (!mounted) return;
+          setAll(b ?? []);
         }
       } catch (e: any) {
-        // 3) Si falla (incluye 403 por timing), intenta sin filtro
-        try {
-          const fallback = await getRoutines();
-          if (!mounted) return;
-          setItems(fallback ?? []);
-        } catch (e2: any) {
-          if (!mounted) return;
-          setError(e2?.message || "No se pudieron cargar las rutinas.");
-          setItems([]);
-        }
+        setError(e?.message || "No se pudieron cargar las rutinas.");
+        setAll([]);
       } finally {
         if (mounted) setLoading(false);
       }
     };
-
     load();
-    return () => {
-      mounted = false;
-    };
-  }, [authLoading, isAuthenticated, intensity]);
+    return () => { mounted = false; };
+  }, [authLoading, isAuthenticated, target]);
+
+  const recommended = target ? all.filter(r => r.intensityName === target) : all;
+  const others = target ? all.filter(r => r.intensityName !== target) : [];
 
   return (
     <main className="w-full">
       <section className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg px-4 py-4 md:py-6">
-        <div className="mb-3">
-          <h1 className="text-xl md:text-2xl font-bold text-[var(--fg)]">VitalApp</h1>
+        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-xl md:text-2xl font-bold text-[var(--fg)]">VitalApp</h1>
+            <p className="text-sm text-[var(--fg-muted)]">
+              {target ? `Rutinas recomendadas dado el nivel de actividad que seleccionaste — ${target}` : "Rutinas"}
+            </p>
+          </div>
+          <A11yButton onClick={() => nav("/resumen")} className="sm:self-end">
+            Resumen semanal
+          </A11yButton>
         </div>
 
-        {/* Estados */}
         {authLoading || loading ? (
-          <div
-            role="status"
-            aria-live="polite"
-            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6"
-          >
+          <div role="status" aria-live="polite" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden animate-pulse"
-              >
+              <div key={i} className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden animate-pulse">
                 <div className="aspect-[16/9] bg-[var(--track)]" />
                 <div className="p-3 md:p-4 space-y-2">
                   <div className="h-4 bg-[var(--track)] rounded" />
@@ -112,26 +86,51 @@ export default function Home() {
             ))}
           </div>
         ) : !isAuthenticated ? (
-          <div className="text-sm text-[var(--fg-muted)]">
-            Inicia sesión para ver tus rutinas.
-          </div>
+          <div className="text-sm text-[var(--fg-muted)]">Inicia sesión para ver tus rutinas.</div>
         ) : error ? (
           <div className="text-red-500 text-sm">{error}</div>
-        ) : items.length === 0 ? (
-          <div className="text-sm text-[var(--fg-muted)]">No hay rutinas disponibles.</div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-            {items.map((r) => (
-              <RoutineCard
-                key={r.id}
-                id={r.id}
-                title={r.title}
-                minutes={r.durationMinutes ?? 0}
-                intensityLevel={r.intensityName ?? undefined}
-                thumbnailUrl={r.thumbnailUrl ?? undefined}
-              />
-            ))}
-          </div>
+          <>
+            {recommended.length > 0 && (
+              <>
+                <h2 className="text-lg font-semibold mb-2 text-[var(--fg)]">Recomendadas para ti</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
+                  {recommended.map(r => (
+                    <RoutineCard
+                      key={r.id}
+                      id={r.id}
+                      title={r.title}
+                      minutes={r.durationMinutes ?? 0}
+                      intensityLevel={r.intensityName ?? undefined}
+                      thumbnailUrl={r.thumbnailUrl ?? undefined}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {others.length > 0 && (
+              <>
+                <h2 className="text-lg font-semibold mb-2 text-[var(--fg)]">Otras rutinas</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+                  {others.map(r => (
+                    <RoutineCard
+                      key={r.id}
+                      id={r.id}
+                      title={r.title}
+                      minutes={r.durationMinutes ?? 0}
+                      intensityLevel={r.intensityName ?? undefined}
+                      thumbnailUrl={r.thumbnailUrl ?? undefined}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {recommended.length === 0 && others.length === 0 && (
+              <div className="text-sm text-[var(--fg-muted)]">No hay rutinas disponibles.</div>
+            )}
+          </>
         )}
       </section>
     </main>

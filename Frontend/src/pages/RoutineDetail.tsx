@@ -3,11 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { getRoutineById } from "../hooks/useApi";
 import type { RoutineDetailDTO, ExerciseSummaryDTO } from "../types/InterfaceRoutines";
 
-/**
- * RoutineDetail — detalle de rutina *simple*.
- * Antes intentaba obtener una "multicomponent" por id desde un mock.
- * Ahora consume /api/routines/{id} y renderiza exercises[] si el back lo expone.
- */
 export default function RoutineDetail() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -118,7 +113,6 @@ export default function RoutineDetail() {
             </section>
           )}
 
-          {/* CTA placeholder: player / seguimiento */}
           <div className="mt-6">
             <button className="min-h-[44px] min-w-[44px] px-4 py-2 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold">
               Iniciar (próximamente)

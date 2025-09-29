@@ -2,6 +2,7 @@ import { useState } from "react";
 import { usePrefs } from "../../context/Preferences";
 import type { Profile } from "../../context/Preferences";
 
+import { useAuth } from "../../context/Auth";
 import StepOAuth from "./steps/StepOAuth";
 import StepName from "./steps/StepName";
 import StepLevel from "./steps/StepLevel";
@@ -10,14 +11,25 @@ import ProgressBar from "../../components/ui/ProgressBar";
 
 export default function OnboardingWizard() {
   const { setProfile } = usePrefs();
-  const [data, setData] = useState<Profile>({});
+  const { isAuthenticated } = useAuth();
 
+  const [data, setData] = useState<Profile>({});
   // 0: OAuth, 1: Name, 2: Level, 3: A11y
   const [step, setStep] = useState(0);
+  const [guest, setGuest] = useState(false);
+
+  function goFromAuth() {
+    // Avanza si hay sesión o si el usuario optó por invitado
+    if (isAuthenticated || guest) setStep(1);
+  }
 
   const steps = [
     // Paso 0: OAuth
-    <StepOAuth key="0" onContinue={() => setStep(1)} />,
+    <StepOAuth
+      key="0"
+      onContinue={goFromAuth}             // llamado tras login/registro OK
+      onGuest={() => { setGuest(true); goFromAuth(); }} // invitado explícito
+    />,
 
     // Paso 1: Nombre
     <StepName
