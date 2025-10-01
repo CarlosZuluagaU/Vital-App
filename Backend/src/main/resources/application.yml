@@ -1,0 +1,94 @@
+server:
+  port: 8080
+
+spring:
+  # Default profile uses H2 database (in-memory)
+  datasource:
+    url: jdbc:h2:mem:vitalapp;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+    
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+    
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+    defer-datasource-initialization: true
+    
+  sql:
+    init:
+      mode: always
+      data-locations: classpath:sql/data.sql
+      
+  # CORS para Vite (puerto 5173). Si usas más, añádelos aquí.
+  web:
+    cors:
+      allowed-origins: "http://localhost:5173"   # ← Vite
+      allowed-methods: "*"
+      allowed-headers: "*"
+      allow-credentials: true
+  
+  # OAuth2 Configuration
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            client-id: ${GOOGLE_CLIENT_ID:your-google-client-id}
+            client-secret: ${GOOGLE_CLIENT_SECRET:your-google-client-secret}
+            scope:
+              - email
+              - profile
+          facebook:
+            client-id: ${FACEBOOK_CLIENT_ID:your-facebook-app-id}
+            client-secret: ${FACEBOOK_CLIENT_SECRET:your-facebook-app-secret}
+            scope:
+              - email
+              - public_profile
+
+# JWT Configuration
+app:
+  jwtSecret: ${JWT_SECRET:VitalApp2024SecretKeyForJWTTokenGenerationWithHS512AlgorithmRequiresAtLeast512BitsForSecureHashing}
+  jwtExpirationInMs: 604800000 # 7 days
+  
+  # OAuth2 settings
+  oauth2:
+    authorizedRedirectUris:
+      - http://localhost:3000/oauth2/redirect
+
+logging:
+  level:
+    org.springframework.web: info
+    org.hibernate.SQL: debug
+    org.hibernate.type.descriptor.sql.BasicBinder: trace
+
+---
+# MySQL profile configuration
+spring:
+  config:
+    activate:
+      on-profile: mysql
+  datasource:
+    url: jdbc:mysql://localhost:3306/vital_app_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: password
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+    defer-datasource-initialization: false

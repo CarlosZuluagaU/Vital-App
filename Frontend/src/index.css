@@ -1,0 +1,69 @@
+@import "tailwindcss";
+:root{font-size:16px;}
+html[data-font="sm"]{font-size:16px;}
+html[data-font="md"]{font-size:18px;}
+html[data-font="lg"]{font-size:20px;}
+
+@media (forced-colors: active) {
+  * { forced-color-adjust: auto; } /* cuando se tienen configuraciones de sistema */
+  .min-h-\[44px\], .min-w-\[44px\] { min-height: 44px; min-width: 44px; }
+}
+
+:root { color-scheme: light dark; }
+
+html, body, #root{
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+}
+img, video, canvas, svg {
+    max-width: 100%;
+    height: auto;
+}
+
+:is(h1,h2,h3,h4,h5,h6,p,span,button,a,div){
+    overflow-wrap: anywhere;
+}
+
+.card{
+    background: var(--card);
+    border: 1px solid var(--border);
+}
+
+.min-touch{
+    min-width: 44px;
+    min-height: 44px;
+}
+
+
+html[data-contrast="true"]{
+    --bg:#121212;
+    --fg:#ffffff;
+    --fg-muted:#e5e7eb;
+    --card:#111111;
+    --card-elevated: #1a1a1a;
+    --border: #9ca3af;
+    --accent:#00ffff;
+    --track: #404040;
+}
+html[data-contrast="false"]{
+    --bg:#F5F5F5;
+    --fg: #0f172a;
+    --fg-muted:#475569;
+    --card:#ffffff;
+    --card-elevated: #f8fafc;
+    --track: #e5e7eb;
+    --accent:#007BFF;
+    --border: #e2e8f0;
+}
+
+body{
+    background-color:var(--bg);
+    color:var(--fg);
+    font-family: "Open Sans", sans-serif;
+}
+
+:focus-visible{
+    outline:3px solid var(--accent);
+    outline-offset:2px;
+}
