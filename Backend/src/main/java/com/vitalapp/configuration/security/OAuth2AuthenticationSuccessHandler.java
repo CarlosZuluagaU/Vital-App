@@ -1,6 +1,7 @@
 package com.vitalapp.configuration.security;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -11,8 +12,6 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.util.UriComponentsBuilder;
-
-import java.util.List;
 
 import com.vitalapp.persistence.entity.UserEntity;
 import com.vitalapp.persistence.entity.UserEntity.AuthProvider;
