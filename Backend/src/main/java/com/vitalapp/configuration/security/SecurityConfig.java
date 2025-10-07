@@ -65,14 +65,18 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Endpoints públicos (autenticación, etc.)
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
 
                         // Endpoints de desarrollo (Swagger, H2) - Se recomienda activarlos solo en el perfil 'dev'
                         .requestMatchers("/h2-console/**").permitAll() // Considerar @Profile("dev")
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Considerar @Profile("dev")
 
+                        // Endpoints públicos para pruebas (temporalmente)
+                        .requestMatchers("/api/exercises/**", "/api/routines/**").permitAll()
+                        
                         // Endpoints que requieren plan básico o superior
-                        .requestMatchers("/api/routines/**", "/api/exercises/basic/**", "/api/me/activities/**").hasRole("USER")
+                        .requestMatchers("/api/me/activities/**").hasRole("USER")
 
                         // Endpoints que requieren plan premium
                         // --- CÓDIGO CORREGIDO ---
