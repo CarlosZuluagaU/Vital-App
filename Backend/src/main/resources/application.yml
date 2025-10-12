@@ -26,8 +26,16 @@ spring:
     
   sql:
     init:
-      mode: always
-      data-locations: classpath:sql/data.sql
+      mode: never
+      # data-locations: classpath:sql/data.sql  # Deshabilitado temporalmente
+      
+  # Configuración para archivos estáticos (solo CSS/JS/otros, NO videos)
+  # Los videos ahora se sirven desde Google Drive
+  web:
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        period: 3600 # Cache por 1 hora (solo para CSS, JS, etc.)
       
   # CORS para Vite (puerto 5173). Si usas más, añádelos aquí.
   web:
@@ -78,9 +86,9 @@ spring:
     activate:
       on-profile: mysql
   datasource:
-    url: jdbc:mysql://localhost:3306/vital_app_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://localhost:3306/vital_app_db?useSSL=false&serverTimezone=America/Bogota&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
     username: root
-    password: password
+    password: root1234
     driver-class-name: com.mysql.cj.jdbc.Driver
     
   jpa:

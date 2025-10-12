@@ -1,7 +1,10 @@
 package com.vitalapp.persistence.entity;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -10,6 +13,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
@@ -47,6 +52,10 @@ public class RoutineEntity {
     
     @Column(name = "is_premium", nullable = false)
     private Boolean isPremium = false;
+    
+    @OneToMany(mappedBy = "routine", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OrderBy("exerciseOrder ASC")
+    private List<RoutineExerciseEntity> routineExercises = new ArrayList<>();
     
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -164,5 +173,23 @@ public class RoutineEntity {
     
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+    
+    public List<RoutineExerciseEntity> getRoutineExercises() {
+        return routineExercises;
+    }
+    
+    public void setRoutineExercises(List<RoutineExerciseEntity> routineExercises) {
+        this.routineExercises = routineExercises;
+    }
+    
+    // Métodos de utilidad para manejar la relación
+    public void addExercise(ExerciseEntity exercise, Integer order) {
+        RoutineExerciseEntity routineExercise = new RoutineExerciseEntity(this, exercise, order);
+        this.routineExercises.add(routineExercise);
+    }
+    
+    public void removeExercise(ExerciseEntity exercise) {
+        this.routineExercises.removeIf(re -> re.getExercise().getId().equals(exercise.getId()));
     }
 }
