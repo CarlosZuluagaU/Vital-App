@@ -37,6 +37,14 @@ spring:
       cache:
         period: 3600 # Cache por 1 hora (solo para CSS, JS, etc.)
       
+  # CORS para Vite (puerto 5173). Si usas más, añádelos aquí.
+  web:
+    cors:
+      allowed-origins: "http://localhost:5173"   # ← Vite
+      allowed-methods: "*"
+      allowed-headers: "*"
+      allow-credentials: true
+  
   # OAuth2 Configuration
   security:
     oauth2:
