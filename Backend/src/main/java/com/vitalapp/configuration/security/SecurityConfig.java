@@ -65,6 +65,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authz -> authz
                         // Endpoints públicos (autenticación, etc.)
                         .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
 
                         // Endpoints de desarrollo (Swagger, H2) - Se recomienda activarlos solo en el perfil 'dev'

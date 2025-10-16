@@ -6,7 +6,7 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: vitalapp
       MYSQL_USER: vital
-      MYSQL_PASSWORD: vital123
+      MYSQL_PASSWORD: password
       TZ: UTC
     ports:
       - "3306:3306"
