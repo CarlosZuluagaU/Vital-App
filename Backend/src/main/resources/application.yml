@@ -29,14 +29,7 @@ spring:
       mode: never
       # data-locations: classpath:sql/data.sql  # Deshabilitado temporalmente
       
-  # Configuración para archivos estáticos (solo CSS/JS/otros, NO videos)
-  # Los videos ahora se sirven desde Google Drive
-  web:
-    resources:
-      static-locations: classpath:/static/
-      cache:
-        period: 3600 # Cache por 1 hora (solo para CSS, JS, etc.)
-      
+ 
   # CORS para Vite (puerto 5173). Si usas más, añádelos aquí.
   web:
     cors:
@@ -44,6 +37,10 @@ spring:
       allowed-methods: "*"
       allowed-headers: "*"
       allow-credentials: true
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        period: 3600
   
   # OAuth2 Configuration
   security:
