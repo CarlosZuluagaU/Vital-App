@@ -99,11 +99,9 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // --- MEJORA DE SEGURIDAD ---
-        // En lugar de "*", especifica los orígenes permitidos.
-        // Para desarrollo, puedes usar "http://localhost:3000" (si usas React/Vue/Angular)
-        // Para producción, sería "https://www.vitalapp.com"
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173", "http://127.0.0.1:5173"));
+        // Temporalmente permitir todos los orígenes para pruebas
+        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // En producción usar: configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://www.vitalapp.com"));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
