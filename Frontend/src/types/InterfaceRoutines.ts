@@ -82,7 +82,6 @@ export interface RoutineSummaryDTO {
 export interface RoutineDetailDTO extends RoutineSummaryDTO {
   description?: string;
   videoUrl?: string;
-  exercises?: ExerciseSummaryDTO[];
 }
 
 /** ---------- Ejercicios ---------- */
@@ -98,8 +97,6 @@ export interface ExerciseSummaryDTO {
   repetitions?: number | null;
   isPremium?: boolean;
   thumbnailUrl?: string;
-  videoUrl?: string;
-  metadata?: string;
 }
 
 export interface ExerciseDetailDTO extends ExerciseSummaryDTO {
@@ -110,8 +107,6 @@ export interface ExerciseDetailDTO extends ExerciseSummaryDTO {
   equipment?: string[];
   videoUrl?: string;
   precautions?: string[];
-  benefits?: string[];
-  motivationalPhrase?: string;
 }
 
 /** ---------- Multicomponent Routine ---------- */
