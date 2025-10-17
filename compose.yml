@@ -9,7 +9,7 @@ services:
       MYSQL_PASSWORD: vitalapp123
       TZ: America/Bogota
     ports:
-      - "3306:3306"
+      - "3307:3306"  # Puerto externo 3307 para evitar conflicto con MySQL local
     volumes:
       - mysqldata:/var/lib/mysql
     healthcheck:
