@@ -7,6 +7,7 @@ import OnboardingWizard from "../pages/Onboarding/OnboardingWizard";
 import RoutineDetail from "../pages/RoutineDetail";
 import Exercises from "../pages/Exercises";
 import WeeklySummary from "../pages/WeeklySummary";
+import SUSQuestionnaire from "../pages/SUSQuestionnaire";
 import { RequireProfile } from "../routes/guards/RequireProfile";
 
 export const router = createBrowserRouter([
@@ -22,7 +23,8 @@ export const router = createBrowserRouter([
           { path: "/rutinas/:id", element: <RoutineDetail /> },
           { path: "/ejercicios", element: <Exercises /> },
           { path: "/ejercicios/:id", element: <Exercises /> },
-          { path: "/resumen", element: <WeeklySummary /> }
+          { path: "/resumen", element: <WeeklySummary /> },
+          { path: "/sus-questionnaire", element: <SUSQuestionnaire version="1.0" environment="staging" /> }
         ]
       }
     ]

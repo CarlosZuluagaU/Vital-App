@@ -3,17 +3,17 @@ services:
     image: mysql:8.0
     container_name: vitalapp-mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: vitalapp
-      MYSQL_USER: vital
-      MYSQL_PASSWORD: password
-      TZ: UTC
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: vital_app_db
+      MYSQL_USER: vitalapp
+      MYSQL_PASSWORD: vitalapp123
+      TZ: America/Bogota
     ports:
       - "3306:3306"
     volumes:
       - mysqldata:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot1234"]
       interval: 10s
       timeout: 5s
       retries: 10

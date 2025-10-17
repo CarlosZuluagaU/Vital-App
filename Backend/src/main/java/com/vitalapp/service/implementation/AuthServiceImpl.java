@@ -86,6 +86,11 @@ public class AuthServiceImpl implements AuthService {
         user.setAge(signUpRequest.getAge());
         user.setPhone(signUpRequest.getPhone());
         user.setProvider(UserEntity.AuthProvider.LOCAL);
+        // Establecer campos booleanos obligatorios
+        user.setIsEnabled(true);
+        user.setIsAccountNonExpired(true);
+        user.setIsAccountNonLocked(true);
+        user.setIsCredentialsNonExpired(true);
         // Establecer createdAt explícitamente para asegurar que no sea null
         user.setCreatedAt(LocalDateTime.now());
         
