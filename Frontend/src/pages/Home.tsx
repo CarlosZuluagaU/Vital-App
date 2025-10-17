@@ -1,8 +1,10 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import RoutineCard from "../components/RoutineCard";
+import ExerciseCard from "../components/ExerciseCard";
 import { usePrefs } from "../context/Preferences";
-import { getRoutines } from "../hooks/useApi";
+import { getRoutines, getHomeExercises } from "../hooks/useApi";
+import type { ExerciseSummaryDTO } from "../types/InterfaceRoutines";
 import type { RoutineSummaryDTO } from "../types/InterfaceRoutines";
 import { useAuth } from "../context/Auth";
 import { A11yButton } from "../components/a11y/A11yButton"; // <-- usa tu botón accesible
@@ -14,6 +16,7 @@ export default function Home() {
 
   const [loading, setLoading] = React.useState(true);
   const [all, setAll] = React.useState<RoutineSummaryDTO[]>([]);
+  const [guestExercises, setGuestExercises] = React.useState<ExerciseSummaryDTO[]>([]);
   const [error, setError] = React.useState<string | null>(null);
 
   const target =
@@ -25,9 +28,27 @@ export default function Home() {
     let mounted = true;
     const load = async () => {
       if (authLoading) return;
-      if (!isAuthenticated) { setAll([]); setLoading(false); return; }
-      setLoading(true); setError(null);
+      setLoading(true);
+      setError(null);
       try {
+        // Si no está autenticado, mostramos hasta 3 rutinas públicas como invitado
+          if (!isAuthenticated) {
+            const pub = await getRoutines();
+            if (!mounted) return;
+            setAll((pub ?? []).slice(0, 3));
+            // además, traemos algunos ejercicios para invitados
+            try {
+              const ex = await getHomeExercises();
+              if (!mounted) return;
+              setGuestExercises((ex ?? []).slice(0, 3));
+            } catch (e) {
+              // no bloquear la carga de rutinas si falla ejercicios
+              console.debug("No se pudieron cargar ejercicios de home para invitados", e);
+            }
+            return;
+          }
+
+        // Usuario autenticado: comportamiento previo
         const a = target ? await getRoutines({ intensity: target }) : await getRoutines();
         if (!mounted) return;
         if (a?.length) {
@@ -86,7 +107,7 @@ export default function Home() {
             ))}
           </div>
         ) : !isAuthenticated ? (
-          <div className="text-sm text-[var(--fg-muted)]">Inicia sesión para ver tus rutinas.</div>
+          <div className="text-sm text-[var(--fg-muted)]">Inicia sesión para ver todas las rutinas y sus funciones.</div>
         ) : error ? (
           <div className="text-red-500 text-sm">{error}</div>
         ) : (
