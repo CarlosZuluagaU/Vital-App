@@ -31,14 +31,12 @@ spring:
       
   # Configuración para archivos estáticos (solo CSS/JS/otros, NO videos)
   # Los videos ahora se sirven desde Google Drive
+  # CORS para Vite (puerto 5173). Si usas más, añádelos aquí.
   web:
     resources:
       static-locations: classpath:/static/
       cache:
         period: 3600 # Cache por 1 hora (solo para CSS, JS, etc.)
-      
-  # CORS para Vite (puerto 5173). Si usas más, añádelos aquí.
-  web:
     cors:
       allowed-origins: "http://localhost:5173"   # ← Vite
       allowed-methods: "*"
@@ -78,6 +76,19 @@ logging:
     org.springframework.web: info
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql.BasicBinder: trace
+
+# Actuator endpoints for health checks and monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    defaults:
+      enabled: true
 
 ---
 # MySQL profile configuration
