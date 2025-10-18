@@ -126,7 +126,7 @@ spring:
     
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate  # IMPORTANTE: NO modificar tablas existentes
     show-sql: true
     properties:
       hibernate:
