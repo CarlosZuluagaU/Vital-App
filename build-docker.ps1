@@ -154,9 +154,25 @@ Write-Host "🧪 PRUEBA RÁPIDA:" -ForegroundColor Cyan
 Write-Host ""
 try {
     $routines = Invoke-RestMethod -Uri "http://localhost:8080/api/routines" -TimeoutSec 5
-    Write-Host "   ✅ API funcionando - $($routines.Count) rutinas disponibles" -ForegroundColor Green
+    $routinesCount = if ($routines) { $routines.Count } else { 0 }
+    
+    if ($routinesCount -gt 0) {
+        Write-Host "   ✅ API funcionando - $routinesCount rutinas disponibles" -ForegroundColor Green
+    } else {
+        Write-Host "   ⚠️  API respondiendo pero sin datos" -ForegroundColor Yellow
+        Write-Host "   💾 Cargando datos iniciales..." -ForegroundColor Cyan
+        
+        # Ejecutar script de población
+        if (Test-Path ".\populate-database.ps1") {
+            & .\populate-database.ps1
+        } else {
+            Write-Host "   ⚠️  Script de población no encontrado" -ForegroundColor Yellow
+            Write-Host "   Ejecuta manualmente: .\populate-database.ps1" -ForegroundColor Gray
+        }
+    }
 } catch {
     Write-Host "   ⏳ API todavía iniciando (espera 30-60 seg más)" -ForegroundColor Yellow
+    Write-Host "   Luego ejecuta: .\populate-database.ps1" -ForegroundColor Gray
 }
 Write-Host ""
 

@@ -12,6 +12,7 @@ services:
       - "3307:3306"  # Puerto externo 3307 para evitar conflicto con MySQL local
     volumes:
       - mysqldata:/var/lib/mysql
+      - ./Backend/src/main/resources/sql:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot1234"]
       interval: 10s
