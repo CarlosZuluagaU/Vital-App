@@ -1,0 +1,23 @@
+# Archivos de prueba locales
+test-user*.json
+login-user.json
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backups SQL
+*.sql
+
+# Environment
+.env
+.env.local
