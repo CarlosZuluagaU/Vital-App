@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getRoutineById } from "../hooks/useApi"; // ← quitado postActivity
+import { getRoutineById } from "../hooks/useApi";
 import ExercisePlayer, { type ExerciseMini } from "../components/ExercisePlayer";
 
 type Json = Record<string, unknown>;
@@ -8,6 +8,21 @@ const asNum = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v :
 const asStr = (v: unknown) => (typeof v === "string" && v.trim() !== "" ? v : undefined);
 const asArr = (v: unknown): Json[] => (Array.isArray(v) ? (v as Json[]) : []);
 
+/* ======================
+   Formato local de fecha (no UTC)
+   ====================== */
+const pad2 = (n: number) => String(n).padStart(2, "0");
+const toLocalISODate = (t: number) => {
+  const d = new Date(t);
+  const y = d.getFullYear();
+  const m = pad2(d.getMonth() + 1);
+  const day = pad2(d.getDate());
+  return `${y}-${m}-${day}`; // YYYY-MM-DD en zona local
+};
+
+/* ======================
+   Persistencia de sesiones
+   ====================== */
 type FinishedSession = {
   routineId: number;
   title?: string;
@@ -18,7 +33,6 @@ type FinishedSession = {
 
 const SESSIONS_KEY = "workouts:sessions";
 const DAY_BUCKET_PREFIX = "workouts:byDate:";
-const toISODate = (t: number) => new Date(t).toISOString().slice(0, 10); // YYYY-MM-DD
 
 function appendToSessions(s: FinishedSession) {
   const raw = localStorage.getItem(SESSIONS_KEY);
@@ -27,7 +41,7 @@ function appendToSessions(s: FinishedSession) {
   localStorage.setItem(SESSIONS_KEY, JSON.stringify(list));
 }
 function appendToDayBucket(s: FinishedSession) {
-  const day = toISODate(s.finishedAt);
+  const day = toLocalISODate(s.finishedAt);
   const key = `${DAY_BUCKET_PREFIX}${day}`;
   const raw = localStorage.getItem(key);
   const bucket = raw ? (JSON.parse(raw) as FinishedSession[]) : [];
@@ -35,7 +49,9 @@ function appendToDayBucket(s: FinishedSession) {
   localStorage.setItem(key, JSON.stringify(bucket));
 }
 
-// Normaliza ejercicios (usa exerciseName/exerciseId si vienen del join)
+/* ======================
+   Normalización de ejercicios
+   ====================== */
 function toMini(e: Json): ExerciseMini {
   const rawName =
     asStr((e as Json).exerciseName) ??
@@ -46,6 +62,7 @@ function toMini(e: Json): ExerciseMini {
     rawName && rawName.toLowerCase() !== "ejercicio"
       ? rawName
       : (asStr((e as Json).description)?.split(/\.(\s|$)/)[0]?.trim() || "Ejercicio");
+
   const rawId = asNum((e as Json).exerciseId) ?? asNum((e as Json).id);
   const id = typeof rawId === "number" ? rawId : 0;
 
@@ -66,6 +83,11 @@ function toMini(e: Json): ExerciseMini {
 
 function extractExercises(routine: Json | null | undefined): ExerciseMini[] {
   if (!routine) return [];
+
+  // 1) Si viene la lista “plana” dto.exercises (como en RoutineDetailDTO), úsala.
+  const listFromExercises = asArr((routine as Json).exercises).map(toMini);
+
+  // 2) groups (por si viene multicomponente)
   const groupKeys = [
     "warmUpExercises",
     "strengthExercises",
@@ -74,13 +96,16 @@ function extractExercises(routine: Json | null | undefined): ExerciseMini[] {
     "cardioExercises",
     "coolDownExercises",
   ];
-  let acc: Json[] = [];
-  for (const k of groupKeys) acc = acc.concat(asArr((routine as Json)[k]));
-  acc = acc.concat(asArr((routine as Json).exercises));
+  let grouped: ExerciseMini[] = [];
+  for (const k of groupKeys) {
+    grouped = grouped.concat(asArr((routine as Json)[k]).map(toMini));
+  }
 
+  // 3) routineExercises del join, sobreescribiendo reps/sets/duration
   const re = asArr((routine as Json).routineExercises);
+  let joined: ExerciseMini[] = [];
   if (re.length) {
-    const flat = re.map((x) => {
+    joined = re.map((x) => {
       const base = toMini((x.exercise ?? {}) as Json);
       return {
         ...base,
@@ -89,12 +114,24 @@ function extractExercises(routine: Json | null | undefined): ExerciseMini[] {
         durationSeconds: asNum(x.durationSeconds) ?? base.durationSeconds,
       } as ExerciseMini;
     });
-    acc = acc.concat(flat as unknown as Json[]);
   }
-  return acc.map(toMini).filter((e) => e.name);
+
+  // Prioridad: exercises (si existe) > joined > grouped
+  const merged = (listFromExercises.length ? listFromExercises : (joined.length ? joined : grouped));
+
+  // Evita duplicados por id+name
+  const seen = new Set<string>();
+  return merged.filter((e) => {
+    const key = `${e.id}::${e.name}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
 }
 
-// -------- Persistencia local ----------
+/* ======================
+   Progreso en vivo
+   ====================== */
 type Progress = {
   routineId: number;
   startedAt: number;
@@ -124,17 +161,6 @@ const saveSessionFinished = (s: {
   localStorage.setItem(sessionsKey, JSON.stringify(list));
 };
 
-/** “Gancho” a futuro para enviar al backend (JWT) */
-async function trySyncWithBackend(s: FinishedSession) {
-  try {
-    // TODO: cuando exista endpoint real, descomentar/ajustar:
-    // await postActivity({ activityType: "ROUTINE_COMPLETED", relatedEntityId: s.routineId });
-    console.debug("[sync] actividad encolada (sin endpoint activo)", s);
-  } catch (err) {
-    console.warn("[sync] no se pudo enviar al backend. Se mantiene local.", err);
-  }
-}
-
 export default function RoutinePlayer() {
   const { id } = useParams();
   const nav = useNavigate();
@@ -148,6 +174,12 @@ export default function RoutinePlayer() {
   const [isRunning, setIsRunning] = React.useState(true);
   const [elapsed, setElapsed] = React.useState(0);
   const [index, setIndex] = React.useState(0);
+
+  // Pantalla de finalización
+  const [finished, setFinished] = React.useState(false);
+
+  // Ref para quitar el listener de teclado
+  const keyHandlerRef = React.useRef<(e: KeyboardEvent) => void>();
 
   React.useEffect(() => {
     let mounted = true;
@@ -186,14 +218,16 @@ export default function RoutinePlayer() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [routineId]);
 
+  // Timer global
   React.useEffect(() => {
-    if (!isRunning) return;
+    if (!isRunning || finished) return;
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
-  }, [isRunning]);
+  }, [isRunning, finished]);
 
+  // Guardar progreso
   React.useEffect(() => {
-    if (!Number.isFinite(routineId)) return;
+    if (!Number.isFinite(routineId) || finished) return;
     const p: Progress = {
       routineId,
       startedAt: loadProgress(routineId)?.startedAt ?? Date.now(),
@@ -201,28 +235,52 @@ export default function RoutinePlayer() {
       currentIndex: index,
     };
     saveProgress(p);
-  }, [routineId, elapsed, index]);
+  }, [routineId, elapsed, index, finished]);
 
+  // Teclado (space/arrow)
   React.useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (finished) return; // no interacciones cuando ya finalizó
       if (e.key === " " || e.code === "Space") {
         e.preventDefault();
         setIsRunning((v) => !v);
       } else if (e.key === "ArrowRight") {
-        handleNext();
+        setIndex((i) => Math.min(exercises.length - 1, i + 1));
       } else if (e.key === "ArrowLeft") {
-        handlePrev();
+        setIndex((i) => Math.max(0, i - 1));
       }
     };
+    keyHandlerRef.current = onKey;
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  });
+  }, [exercises.length, finished]);
 
-  const handlePrev = () => setIndex((i) => Math.max(0, i - 1));
+  const handlePrev = () => {
+    if (index === 0) {
+      // Salir con confirmación en el primer ejercicio
+      const ok = confirm("¿Deseas salir de la rutina? Tu progreso actual se guardará.");
+      if (ok) {
+        // guardamos parcial como sesión NO terminada (opcional) o solo progreso vivo
+        nav(-1);
+      }
+      return;
+    }
+    setIndex((i) => Math.max(0, i - 1));
+  };
+
   const handleNext = () => setIndex((i) => Math.min(exercises.length - 1, i + 1));
-  const handleFinish = () => {
-    const title = asStr((routine as Json)?.title) ?? "Rutina";
 
+  const handleFinish = () => {
+    // 1) Cortar interacciones y timer inmediatamente
+    setIsRunning(false);
+    setFinished(true);
+    // Quitar listener de teclado de inmediato
+    if (keyHandlerRef.current) {
+      window.removeEventListener("keydown", keyHandlerRef.current);
+    }
+
+    // 2) Persistir en local
+    const title = asStr((routine as Json)?.title) ?? "Rutina";
     const session: FinishedSession = {
       routineId,
       title,
@@ -230,12 +288,13 @@ export default function RoutinePlayer() {
       finishedAt: Date.now(),
       exercises: exercises.length,
     };
-
     appendToSessions(session);
     appendToDayBucket(session);
     clearProgress(routineId);
-    trySyncWithBackend(session);
-    nav(-1);
+
+    // 3) (Gancho a back) — no bloquea navegación
+    // TODO: cuando habiliten endpoint, mandar al servidor aquí.
+    console.debug("[finish] sesión guardada localmente", session);
   };
 
   const fmt = (s: number) => {
@@ -257,64 +316,95 @@ export default function RoutinePlayer() {
 
   return (
     <main className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg px-4 py-4 md:py-6">
-      <section
-        className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 md:p-4 flex items-center justify-between gap-3"
-        aria-label="Estado de la rutina"
-      >
-        <div>
-          <h1 className="text-base md:text-lg font-semibold text-[var(--fg)]">{title}</h1>
-          <p className="text-sm text-[var(--fg-muted)]">
-            Ejercicio {exercises.length ? index + 1 : 0} de {exercises.length} · Tiempo {fmt(elapsed)}
+      {/* Si finalizó, mostramos una pantalla clara de cierre (tipo Duolingo) */}
+      {finished ? (
+        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-center">
+          <h1 className="text-xl md:text-2xl font-bold text-[var(--fg)]">¡Rutina completada! 🎉</h1>
+          <p className="mt-2 text-[var(--fg)]">
+            Tiempo total: <b>{fmt(elapsed)}</b> · Ejercicios: <b>{exercises.length}</b>
           </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
-            onClick={() => setIsRunning((v) => !v)}
-            aria-pressed={isRunning}
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+            <button
+              className="min-h-[44px] min-w-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
+              onClick={() => nav("/resumen")}
+            >
+              Ver resumen semanal
+            </button>
+            <button
+              className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
+              onClick={() => nav("/")}
+            >
+              Ir al inicio
+            </button>
+          </div>
+          <p className="mt-3 text-sm text-[var(--fg-muted)]">Puedes cerrar esta ventana con Esc.</p>
+        </section>
+      ) : (
+        <>
+          {/* Barra superior */}
+          <section
+            className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 md:p-4 flex items-center justify-between gap-3"
+            aria-label="Estado de la rutina"
           >
-            {isRunning ? "Pausar" : "Continuar"}
-          </button>
-        </div>
-      </section>
+            <div>
+              <h1 className="text-base md:text-lg font-semibold text-[var(--fg)]">{title}</h1>
+              <p className="text-sm text-[var(--fg-muted)]">
+                Ejercicio {exercises.length ? index + 1 : 0} de {exercises.length} · Tiempo {fmt(elapsed)}
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
+                onClick={() => setIsRunning((v) => !v)}
+                aria-pressed={isRunning}
+              >
+                {isRunning ? "Pausar" : "Continuar"}
+              </button>
+            </div>
+          </section>
 
-      <section className="mt-4 md:mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 md:p-6">
-        {current ? (
-          <ExercisePlayer exercise={current} />
-        ) : (
-          <p className="text-[var(--fg)]">No hay ejercicios definidos para esta rutina.</p>
-        )}
-      </section>
+          {/* Contenido del ejercicio (key => asegura remontar el iframe al cambiar) */}
+          <section className="mt-4 md:mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 md:p-6">
+            {current ? (
+              <div key={current.id}>
+                <ExercisePlayer exercise={current} />
+              </div>
+            ) : (
+              <p className="text-[var(--fg)]">No hay ejercicios definidos para esta rutina.</p>
+            )}
+          </section>
 
-      <nav className="mt-4 md:mt-6 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
-          onClick={handlePrev}
-          disabled={index === 0}
-        >
-          ← Anterior
-        </button>
+          {/* Controles inferiores */}
+          <nav className="mt-4 md:mt-6 flex items-center justify-between gap-3">
+            <button
+              type="button"
+              className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
+              onClick={handlePrev}
+            >
+              {index === 0 ? "Salir" : "← Anterior"}
+            </button>
 
-        {index < exercises.length - 1 ? (
-          <button
-            type="button"
-            className="min-h-[44px] min-w-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
-            onClick={handleNext}
-          >
-            Siguiente →
-          </button>
-        ) : (
-          <button
-            type="button"
-            className="min-h-[44px] min-w-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
-            onClick={handleFinish}
-          >
-            Finalizar rutina ✓
-          </button>
-        )}
-      </nav>
+            {index < exercises.length - 1 ? (
+              <button
+                type="button"
+                className="min-h-[44px] min-w-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
+                onClick={handleNext}
+              >
+                Siguiente →
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="min-h-[44px] min-w-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
+                onClick={handleFinish}
+              >
+                Finalizar rutina ✓
+              </button>
+            )}
+          </nav>
+        </>
+      )}
     </main>
   );
 }
