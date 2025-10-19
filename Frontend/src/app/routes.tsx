@@ -6,6 +6,7 @@ import Welcome from "../pages/Welcome";
 import OnboardingWizard from "../pages/Onboarding/OnboardingWizard";
 import RoutineDetail from "../pages/RoutineDetail";
 import WeeklySummary from "../pages/WeeklySummary";
+import RoutinePlayer from "../pages/RoutinePlayer";
 import SUSQuestionnaire from "../pages/SUSQuestionnaire";
 import { RequireProfile } from "../routes/guards/RequireProfile";
 
@@ -20,6 +21,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "/", element: <Home /> },
           { path: "/rutinas/:id", element: <RoutineDetail /> },
+          { path: "/rutinas/:id/ejecutar", element: <RoutinePlayer /> },
           { path: "/resumen", element: <WeeklySummary /> },
           { path: "/sus-questionnaire", element: <SUSQuestionnaire version="1.0" environment="staging" /> }
         ]

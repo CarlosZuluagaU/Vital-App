@@ -33,15 +33,15 @@ spring:
   # Los videos ahora se sirven desde Google Drive
   # CORS para Vite (puerto 5173). Si usas más, añádelos aquí.
   web:
-    resources:
-      static-locations: classpath:/static/
-      cache:
-        period: 3600 # Cache por 1 hora (solo para CSS, JS, etc.)
     cors:
       allowed-origins: "http://localhost:5173"   # ← Vite
       allowed-methods: "*"
       allowed-headers: "*"
       allow-credentials: true
+    resources:
+      static-locations: classpath:/static/
+      cache:
+        period: 3600
   
   # OAuth2 Configuration
   security:
