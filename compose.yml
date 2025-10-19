@@ -13,11 +13,15 @@ services:
     volumes:
       - mysqldata:/var/lib/mysql
       - ./Backend/src/main/resources/sql:/docker-entrypoint-initdb.d:ro
+    networks:
+      - vitalapp-network
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot1234"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-proot1234"]
       interval: 10s
       timeout: 5s
       retries: 10
+      start_period: 30s
+    command: --default-authentication-plugin=mysql_native_password --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
   # Backend Spring Boot
   backend:
@@ -31,8 +35,11 @@ services:
       SPRING_DATASOURCE_USERNAME: root
       SPRING_DATASOURCE_PASSWORD: root1234
       TZ: America/Bogota
+      JAVA_OPTS: "-Xms256m -Xmx512m"
     ports:
       - "8080:8080"
+    networks:
+      - vitalapp-network
     depends_on:
       mysql:
         condition: service_healthy
@@ -41,7 +48,7 @@ services:
       interval: 30s
       timeout: 10s
       retries: 5
-      start_period: 60s
+      start_period: 90s
     restart: unless-stopped
 
   # Opcional: navegador de BD súper simple
@@ -50,9 +57,15 @@ services:
     container_name: vitalapp-adminer
     ports:
       - "8082:8080"
+    networks:
+      - vitalapp-network
     depends_on:
       - mysql
     restart: unless-stopped
 
 volumes:
   mysqldata:
+
+networks:
+  vitalapp-network:
+    driver: bridge
