@@ -29,7 +29,8 @@ spring:
       mode: never
       # data-locations: classpath:sql/data.sql  # Deshabilitado temporalmente
       
- 
+  # Configuración para archivos estáticos (solo CSS/JS/otros, NO videos)
+  # Los videos ahora se sirven desde Google Drive
   # CORS para Vite (puerto 5173). Si usas más, añádelos aquí.
   web:
     cors:
@@ -76,6 +77,19 @@ logging:
     org.hibernate.SQL: debug
     org.hibernate.type.descriptor.sql.BasicBinder: trace
 
+# Actuator endpoints for health checks and monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: when-authorized
+  health:
+    defaults:
+      enabled: true
+
 ---
 # MySQL profile configuration
 spring:
@@ -99,20 +113,25 @@ spring:
     defer-datasource-initialization: false
 
 ---
-# Docker MySQL profile configuration (puerto 3307)
+# Docker MySQL profile configuration
 spring:
   config:
     activate:
       on-profile: docker
   datasource:
-    url: jdbc:mysql://localhost:3307/vital_app_db?useSSL=false&serverTimezone=America/Bogota&allowPublicKeyRetrieval=true&createDatabaseIfNotExist=true
-    username: root
-    password: root1234
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://mysql:3306/vital_app_db?useSSL=false&serverTimezone=America/Bogota&allowPublicKeyRetrieval=true}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
+    password: ${SPRING_DATASOURCE_PASSWORD:root1234}
     driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
     
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none  # none: no permite que Hibernate modifique el esquema, usa solo SQL scripts
     show-sql: true
     properties:
       hibernate:
