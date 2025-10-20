@@ -2,28 +2,34 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { usePrefs, type FontSize } from "../context/Preferences";
 import { useAuth } from "../context/Auth";
+import { A11yButton } from "./a11y/A11yButton";
 
 export default function Header() {
-  const { fontSize, setFontSize, highContrast, setHighContrast } = usePrefs();
-  const { user } = useAuth();
+  const { fontSize, setFontSize, highContrast, setHighContrast, setProfile } = usePrefs();
+  const { user, isAuthenticated, logout } = useAuth();
 
   const name = (user as any)?.name || (user as any)?.username || "¡bienvenid@!";
   const greeting = `Hola, ${name}. ¡Esforcémonos al máximo hoy!`;
 
   const SizeBtn: React.FC<{ label: string; value: FontSize }> = ({ label, value }) => (
-    <button
-      type="button"
-      onClick={() => setFontSize(value)}
+    <A11yButton
+      variant="secondary"
       aria-pressed={fontSize === value}
-      className={[
-        "min-h-[44px] min-w-[44px] px-3 rounded-lg border",
-        "bg-[var(--card)] border-[var(--border)] text-[var(--fg)]",
-        fontSize === value ? "ring-2 ring-[var(--accent)]" : "focus-visible:outline-none",
-      ].join(" ")}
+      onClick={() => setFontSize(value)}
+      className={fontSize === value ? "ring-2 ring-[var(--accent)]" : ""}
     >
       {label}
-    </button>
+    </A11yButton>
   );
+
+  const handleLogout = async () => {
+    try {
+      await logout?.();
+    } finally {
+      setProfile(null);
+      location.href = "/welcome";
+    }
+  };
 
   return (
     <header role="banner" className="sticky top-0 z-40 border-b border-[var(--border)] bg-[var(--card-elevated)]">
@@ -46,16 +52,31 @@ export default function Header() {
               <SizeBtn label="MD" value="md" />
               <SizeBtn label="LG" value="lg" />
             </div>
-            <button
-              type="button"
-              onClick={() => setHighContrast(!highContrast)}
-              className="min-h-[44px] min-w-[44px] px-3 rounded-lg border bg-[var(--card)] border-[var(--border)] text-[var(--fg)] focus-visible:outline-none"
+
+            <A11yButton
+              variant="secondary"
               aria-pressed={highContrast}
               aria-label={highContrast ? "Desactivar alto contraste" : "Activar alto contraste"}
               title={highContrast ? "Desactivar alto contraste" : "Activar alto contraste"}
+              onClick={() => setHighContrast(!highContrast)}
             >
               {highContrast ? "Contraste: Alto" : "Contraste: Normal"}
-            </button>
+            </A11yButton>
+
+            {isAuthenticated ? (
+              <A11yButton variant="primary" onClick={handleLogout} aria-label="Cerrar sesión" title="Cerrar sesión">
+                Cerrar sesión
+              </A11yButton>
+            ) : (
+              <Link
+                to="/onboarding"
+                aria-label="Iniciar sesión o registrarse"
+                title="Iniciar sesión o registrarse"
+                className="inline-flex items-center justify-center min-h-[44px] min-w-[44px] px-3 rounded-lg border bg-[var(--card)] border-[var(--border)] text-[var(--fg)]"
+              >
+                Acceder
+              </Link>
+            )}
           </div>
         </div>
       </div>

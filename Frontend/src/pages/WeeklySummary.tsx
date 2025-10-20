@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { getLocalWeeklySummary } from "../utils/weekly";
+import { getLocalWeeklySummary } from "../utils/Weekly";
 
 const fmtMin = (sec: number) => Math.floor(sec / 60);
 const weekdayShort = (iso: string) => {
@@ -99,12 +99,6 @@ export default function WeeklySummary() {
           onClick={() => nav("/")}
         >
           Empezar ahora
-        </button>
-        <button
-          className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
-          onClick={() => nav(-1)}
-        >
-          ← Volver
         </button>
       </section>
     </main>

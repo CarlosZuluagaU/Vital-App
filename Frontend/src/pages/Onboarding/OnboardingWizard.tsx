@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePrefs } from "../../context/Preferences";
 import type { Profile } from "../../context/Preferences";
 
@@ -11,27 +11,54 @@ import ProgressBar from "../../components/ui/ProgressBar";
 
 export default function OnboardingWizard() {
   const { setProfile } = usePrefs();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const [data, setData] = useState<Profile>({});
-  // 0: OAuth, 1: Name, 2: Level, 3: A11y
   const [step, setStep] = useState(0);
   const [guest, setGuest] = useState(false);
 
+  // Si autenticó (no invitado), pre-seatea nombre (si backend lo trae) y salta StepName
   function goFromAuth() {
-    // Avanza si hay sesión o si el usuario optó por invitado
-    if (isAuthenticated || guest) setStep(1);
+    if (isAuthenticated) {
+      setData((prev) => ({
+        ...prev,
+        name: (user as any)?.name || (user as any)?.username || prev.name,
+      }));
+      setStep(2);
+    } else if (guest) {
+      setStep(1);
+    }
   }
 
+  useEffect(() => {
+    if (step === 0 && (isAuthenticated || guest)) {
+      goFromAuth();
+    }
+  }, [isAuthenticated, guest]);
+
   const steps = [
-    // Paso 0: OAuth
+    // Paso 0: OAuth / Login / Registro / Invitado
     <StepOAuth
       key="0"
-      onContinue={goFromAuth}             // llamado tras login/registro OK
-      onGuest={() => { setGuest(true); goFromAuth(); }} // invitado explícito
+      onContinue={() => {
+        if (!guest) {
+          setData((prev) => ({
+            ...prev,
+            name: (user as any)?.name || (user as any)?.username || prev.name,
+          }));
+          setStep(2);
+        } else {
+          // invitado → ir a StepName
+          setStep(1);
+        }
+      }}
+      onGuest={() => {
+        setGuest(true);
+        setStep(1);
+      }}
     />,
 
-    // Paso 1: Nombre
+    // Paso 1: Nombre (solo invitado)
     <StepName
       key="1"
       value={data}
@@ -44,7 +71,7 @@ export default function OnboardingWizard() {
       key="2"
       value={data}
       onChange={setData}
-      onPrev={() => setStep(1)}
+      onPrev={() => (guest ? setStep(1) : setStep(2))}
       onNext={() => setStep(3)}
     />,
 
@@ -55,8 +82,8 @@ export default function OnboardingWizard() {
       onChange={setData}
       onPrev={() => setStep(2)}
       onFinish={() => {
-        setProfile(data);      // guarda en contexto/localStorage
-        location.href = "/";   // redirige al Home
+        setProfile(data);
+        location.href = "/";
       }}
     />,
   ];
