@@ -23,7 +23,7 @@ export default function WeeklySummary() {
         <h1 className="text-xl md:text-2xl font-bold text-[var(--fg)]">Tu progreso</h1>
         <button
           className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
-          onClick={() => nav(-1)}
+          onClick={() => nav("/")}
         >
           ← Volver
         </button>
