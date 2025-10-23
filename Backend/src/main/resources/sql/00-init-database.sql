@@ -455,7 +455,7 @@ NULL, 10, 2, false, true,
 (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
 (SELECT id FROM intensities WHERE name = 'Suave'),
 (SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
-'https://drive.google.com/file/d/1IRb5e6PHvtQj6cxkieeuGE-u_ehkNX5A/preview',
+'https://drive.google.com/file/d/1uF9DfCtDFOA1teTO4K9LjgXrfG4naiKf/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1IRb5e6PHvtQj6cxkieeuGE-u_ehkNX5A'),
 
 -- 13. Elevación Lateral de Pierna
@@ -469,7 +469,7 @@ NULL, 10, 2, false, true,
 (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
 (SELECT id FROM intensities WHERE name = 'Moderado'),
 (SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
-'https://drive.google.com/file/d/1J6sxowcvmAJxo1A8S6aooPnm8S-fm05H/preview',
+'https://drive.google.com/file/d/1uarQnmcFWA09fLSWxHXVOlJmyvZBXxsJ/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1J6sxowcvmAJxo1A8S6aooPnm8S-fm05H'),
 
 -- 14. Flexiones en la Pared
@@ -483,7 +483,7 @@ NULL, 10, 2, false, true,
 (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
 (SELECT id FROM intensities WHERE name = 'Moderado'),
 (SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
-'https://drive.google.com/file/d/1_RT3mZ4cLctx1JLk6L_bYwUorCvy7Lih/preview',
+'https://drive.google.com/file/d/1_WieqLriX9ccZWIeiuZ3Po41Iyhz0YFe/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1_RT3mZ4cLctx1JLk6L_bYwUorCvy7Lih'),
 
 -- 15. Sentarse y Levantarse de una Silla
@@ -497,7 +497,7 @@ NULL, 10, 2, false, true,
 (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
 (SELECT id FROM intensities WHERE name = 'Moderado'),
 (SELECT id FROM exercise_types WHERE name = 'Funcional'),
-'https://drive.google.com/file/d/1yPI4qOE-WOLTTGpzp9tam7Am6z6Sp-EG/preview',
+'https://drive.google.com/file/d/1-PFFba41QMR-o7-uxS1Hn-LPs92disTL/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1yPI4qOE-WOLTTGpzp9tam7Am6z6Sp-EG'),
 
 -- 16. Jumping Jacks sin Salto
@@ -511,7 +511,7 @@ NULL, 10, 2, false, true,
 (SELECT id FROM categories WHERE name = 'Cardio'),
 (SELECT id FROM intensities WHERE name = 'Moderado'),
 (SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
-'https://drive.google.com/file/d/1_WieqLriX9ccZWIeiuZ3Po41Iyhz0YFe/preview',
+'https://drive.google.com/file/d/13cX7egRaeK9zeewbs7SA_3Y1uIDuj_Nx/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1_WieqLriX9ccZWIeiuZ3Po41Iyhz0YFe'),
 
 -- 17. Paso Lateral
@@ -525,7 +525,7 @@ NULL, 10, 2, false, true,
 (SELECT id FROM categories WHERE name = 'Equilibrio'),
 (SELECT id FROM intensities WHERE name = 'Moderado'),
 (SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
-'https://drive.google.com/file/d/1hCyporUKsOIuFiHz7PE3CfocJf-SYkUV/preview',
+'https://drive.google.com/file/d/14J9030mEBfAXSMpQvNHsV9GC3FdbTo-q/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1hCyporUKsOIuFiHz7PE3CfocJf-SYkUV'),
 
 -- 18. Estiramiento de Gato-Vaca (Sentado)
@@ -539,7 +539,7 @@ NULL, 10, 2, false, true,
 (SELECT id FROM categories WHERE name = 'Flexibilidad'),
 (SELECT id FROM intensities WHERE name = 'Suave'),
 (SELECT id FROM exercise_types WHERE name = 'Ejercicio Sentado'),
-'https://drive.google.com/file/d/1SH_qLOr5jaFQyiUTCY1-FjNcN5TmSS_x/preview',
+'https://drive.google.com/file/d/1vUQbZSy_e1QeZTUj32FFO0iyBi40-41N/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1SH_qLOr5jaFQyiUTCY1-FjNcN5TmSS_x'),
 
 -- 19. Torsión Suave de Columna (Sentado)
@@ -553,7 +553,7 @@ NULL, 10, 2, false, true,
 (SELECT id FROM categories WHERE name = 'Flexibilidad'),
 (SELECT id FROM intensities WHERE name = 'Suave'),
 (SELECT id FROM exercise_types WHERE name = 'Ejercicio Sentado'),
-'https://drive.google.com/file/d/1yvNBjUb0zZ3VM1bu6ERSRNF0j05gkj2k/preview',
+'https://drive.google.com/file/d/1hCyporUKsOIuFiHz7PE3CfocJf-SYkUV/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1yvNBjUb0zZ3VM1bu6ERSRNF0j05gkj2k'),
 
 -- 20. Sentadilla (PREMIUM)
@@ -567,7 +567,7 @@ NULL, 10, 2, true, true,
 (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
 (SELECT id FROM intensities WHERE name = 'Intermedio'),
 (SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
-'https://drive.google.com/file/d/1vUQbZSy_e1QeZTUj32FFO0iyBi40-41N/preview',
+'https://drive.google.com/file/d/1ETK0Uq1Whe5J3hS-K9rLEntNBbj9r14P/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1vUQbZSy_e1QeZTUj32FFO0iyBi40-41N'),
 
 -- 21. Peso muerto con mancuernas (PREMIUM)
@@ -581,7 +581,7 @@ NULL, 10, 2, true, true,
 (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
 (SELECT id FROM intensities WHERE name = 'Intermedio'),
 (SELECT id FROM exercise_types WHERE name = 'Con Implementos'),
-'https://drive.google.com/file/d/1hUHxF3iDZ_2jGViFT3H6cqlaLS7SwkJ1/preview',
+'https://drive.google.com/file/d/1j01Wd6X_Atzn3sgta5sp4iow6o-JmM1X/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1hUHxF3iDZ_2jGViFT3H6cqlaLS7SwkJ1'),
 
 -- 22. Remo con Banda Elástica (PREMIUM)
@@ -595,7 +595,7 @@ NULL, 10, 2, true, true,
 (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
 (SELECT id FROM intensities WHERE name = 'Intermedio'),
 (SELECT id FROM exercise_types WHERE name = 'Con Implementos'),
-'https://drive.google.com/file/d/1uF9DfCtDFOA1teTO4K9LjgXrfG4naiKf/preview',
+'https://drive.google.com/file/d/1Sr0WC4sOy1SWIEd3GoeAFwbrod5q4ZaZ/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1uF9DfCtDFOA1teTO4K9LjgXrfG4naiKf');
 
 SELECT 'OK - Ejercicios insertados:' as status, COUNT(*) as cantidad FROM exercises;
