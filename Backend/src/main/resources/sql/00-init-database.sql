@@ -605,69 +605,75 @@ SELECT 'OK - Ejercicios insertados:' as status, COUNT(*) as cantidad FROM exerci
 -- =====================================================
 
 -- RUTINA 1: Calentamiento y Movilidad Matutina
-INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id) 
+INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id, thumbnail_url) 
 VALUES (
     'Calentamiento y Movilidad Matutina',
     'Rutina suave de calentamiento perfecta para comenzar el día. Incluye ejercicios de movilidad articular y estiramientos suaves que preparan el cuerpo para las actividades diarias.',
     15,
     false,
     (SELECT id FROM categories WHERE name = 'Flexibilidad'),
-    (SELECT id FROM intensities WHERE name = 'Suave')
+    (SELECT id FROM intensities WHERE name = 'Suave'),
+    'https://drive.google.com/file/d/1muUPlp0Hzx5NjxkKG2p7uMkpDgdp-SG7/view?usp=drive_link'
 );
 
 -- RUTINA 2: Fortalecimiento Suave en Casa
-INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id)
+INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id, thumbnail_url)
 VALUES (
     'Fortalecimiento Suave en Casa',
     'Rutina de fortalecimiento diseñada para adultos mayores. Ejercicios seguros y efectivos que se pueden realizar en casa con una silla como apoyo principal.',
     20,
     false,
     (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
-    (SELECT id FROM intensities WHERE name = 'Suave')
+    (SELECT id FROM intensities WHERE name = 'Suave'),
+    'https://drive.google.com/file/d/1jOG2s7KpqQ85nvqn00DxTvIN-EfuLUmZ/view?usp=drive_link'
 );
 
 -- RUTINA 3: Equilibrio y Coordinación
-INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id)
+INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id, thumbnail_url)
 VALUES (
     'Equilibrio y Coordinación',
     'Rutina especializada en mejorar el equilibrio y la coordinación. Esencial para prevenir caídas y mantener la independencia en las actividades diarias.',
     18,
     false,
     (SELECT id FROM categories WHERE name = 'Equilibrio'),
-    (SELECT id FROM intensities WHERE name = 'Moderado')
+    (SELECT id FROM intensities WHERE name = 'Moderado'),
+    'https://drive.google.com/file/d/1TuryhT7jtkqbGh_lc9nMCYREkVCYqoOF/view?usp=drive_link'
 );
 
 -- RUTINA 4: Cardio Activo y Suave
-INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id)
+INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id, thumbnail_url)
 VALUES (
     'Cardio Activo y Suave',
     'Rutina cardiovascular de bajo impacto diseñada para mejorar la resistencia y energía. Ejercicios dinámicos pero seguros para el sistema cardiovascular.',
     25,
     false,
     (SELECT id FROM categories WHERE name = 'Cardio'),
-    (SELECT id FROM intensities WHERE name = 'Moderado')
+    (SELECT id FROM intensities WHERE name = 'Moderado'),
+    'https://drive.google.com/file/d/1wp7b2B27ro6HF68_InJoxwYIj2GLCwZw/view?usp=drive_link'
 );
 
 -- RUTINA 5: Fuerza Funcional (PREMIUM)
-INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id)
+INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id, thumbnail_url)
 VALUES (
     'Fuerza Funcional',
     'Rutina premium de fortalecimiento intensivo con ejercicios avanzados. Requiere experiencia previa y buena condición física.',
     30,
     true,
     (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
-    (SELECT id FROM intensities WHERE name = 'Intermedio')
+    (SELECT id FROM intensities WHERE name = 'Intermedio'),
+    'https://drive.google.com/file/d/1a0VZLpvL-5WOYxPpdY_bzkHp8dVb848A/view?usp=drive_link'
 );
 
 -- RUTINA 6: Movilidad Completa
-INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id)
+INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id, thumbnail_url)
 VALUES (
     'Movilidad Completa',
     'Rutina integral de movilidad y flexibilidad para todo el cuerpo. Ideal para mantener rango de movimiento y prevenir rigidez.',
     22,
     false,
     (SELECT id FROM categories WHERE name = 'Movilidad'),
-    (SELECT id FROM intensities WHERE name = 'Suave')
+    (SELECT id FROM intensities WHERE name = 'Suave'),
+    'https://drive.google.com/file/d/1AAGKuj67KneD_gnwuwITDS0GGd0nUqbH/view?usp=drive_link'
 );
 
 SELECT 'OK - Rutinas insertadas:' as status, COUNT(*) as cantidad FROM routines;
