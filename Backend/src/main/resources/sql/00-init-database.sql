@@ -437,6 +437,167 @@ NULL, 8, 2, false, true,
 'https://drive.google.com/file/d/1IRb5e6PHvtQj6cxkieeuGE-u_ehkNX5A/view?usp=drive_link',
 'https://drive.google.com/uc?export=view&id=1h784l-aYYANrX02al64zGZPjL5DM_mVb');
 
+-- EJERCICIOS ADICIONALES
+INSERT INTO exercises (
+    name, description, instructions, benefits, safety_tips, modifications,
+    duration_seconds, repetitions, sets, is_premium, is_active,
+    category_id, intensity_id, exercise_type_id, 
+    video_url, image_url
+) VALUES
+-- 12. Elevación de Talones y Puntas
+('Elevación de Talones y Puntas',
+'Ejercicio para fortalecer los músculos de las pantorrillas y mejorar el equilibrio.',
+'De pie con apoyo de silla, levante los talones del suelo quedando en punta de pies. Mantenga 3 segundos y baje. Luego levante los dedos quedando en talones.',
+'Fortalece pantorrillas y tobillos, mejora equilibrio',
+'Usar silla para balance. Movimientos controlados.',
+'Realizar sentado si el equilibrio es limitado.',
+NULL, 10, 2, false, true,
+(SELECT id FROM categories WHERE name = 'Fortalecimiento'),
+(SELECT id FROM intensities WHERE name = 'Suave'),
+(SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
+'https://drive.google.com/file/d/1IRb5e6PHvtQj6cxkieeuGE-u_ehkNX5A/preview',
+'https://drive.google.com/uc?export=view&id=1IRb5e6PHvtQj6cxkieeuGE-u_ehkNX5A'),
+
+-- 13. Elevación Lateral de Pierna
+('Elevación Lateral de Pierna',
+'Ejercicio para fortalecer los músculos laterales de la cadera y mejorar estabilidad.',
+'De pie con apoyo de silla, levante una pierna hacia el lado manteniendo la rodilla recta. Baje lentamente. Alterne piernas.',
+'Fortalece abductores de cadera, mejora equilibrio lateral',
+'Mantener tronco erguido. No inclinarse hacia los lados.',
+'Reducir altura de elevación.',
+NULL, 10, 2, false, true,
+(SELECT id FROM categories WHERE name = 'Fortalecimiento'),
+(SELECT id FROM intensities WHERE name = 'Moderado'),
+(SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
+'https://drive.google.com/file/d/1J6sxowcvmAJxo1A8S6aooPnm8S-fm05H/preview',
+'https://drive.google.com/uc?export=view&id=1J6sxowcvmAJxo1A8S6aooPnm8S-fm05H'),
+
+-- 14. Flexiones en la Pared
+('Flexiones en la Pared',
+'Ejercicio de fortalecimiento de brazos y pecho adaptado para adultos mayores.',
+'De pie frente a una pared, coloque las manos a la altura de los hombros. Flexione los codos acercando el pecho a la pared. Empuje para volver.',
+'Fortalece pecho, brazos y hombros de forma segura',
+'Mantener cuerpo recto. No arquear espalda.',
+'Acercarse más a la pared para reducir dificultad.',
+NULL, 10, 2, false, true,
+(SELECT id FROM categories WHERE name = 'Fortalecimiento'),
+(SELECT id FROM intensities WHERE name = 'Moderado'),
+(SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
+'https://drive.google.com/file/d/1_RT3mZ4cLctx1JLk6L_bYwUorCvy7Lih/preview',
+'https://drive.google.com/uc?export=view&id=1_RT3mZ4cLctx1JLk6L_bYwUorCvy7Lih'),
+
+-- 15. Sentarse y Levantarse de una Silla
+('Sentarse y Levantarse de una Silla',
+'Ejercicio funcional fundamental para mantener independencia en actividades diarias.',
+'Sentado en una silla, levántese sin usar las manos si es posible. Vuelva a sentarse lentamente y controladamente.',
+'Fortalece piernas y glúteos, mejora funcionalidad diaria',
+'Usar brazos si es necesario. Silla estable y firme.',
+'Usar cojín más alto para reducir dificultad.',
+NULL, 10, 2, false, true,
+(SELECT id FROM categories WHERE name = 'Fortalecimiento'),
+(SELECT id FROM intensities WHERE name = 'Moderado'),
+(SELECT id FROM exercise_types WHERE name = 'Funcional'),
+'https://drive.google.com/file/d/1yPI4qOE-WOLTTGpzp9tam7Am6z6Sp-EG/preview',
+'https://drive.google.com/uc?export=view&id=1yPI4qOE-WOLTTGpzp9tam7Am6z6Sp-EG'),
+
+-- 16. Jumping Jacks sin Salto
+('Jumping Jacks sin Salto',
+'Versión de bajo impacto del ejercicio clásico, ideal para cardio seguro.',
+'De pie, da un paso lateral mientras levantas los brazos. Regresa al centro. Alterna lados manteniendo un ritmo constante.',
+'Ejercicio cardiovascular de bajo impacto, mejora coordinación',
+'Mantener movimientos controlados. Usar silla para apoyo si es necesario.',
+'Reducir amplitud de movimientos.',
+180, NULL, NULL, false, true,
+(SELECT id FROM categories WHERE name = 'Cardio'),
+(SELECT id FROM intensities WHERE name = 'Moderado'),
+(SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
+'https://drive.google.com/file/d/1_WieqLriX9ccZWIeiuZ3Po41Iyhz0YFe/preview',
+'https://drive.google.com/uc?export=view&id=1_WieqLriX9ccZWIeiuZ3Po41Iyhz0YFe'),
+
+-- 17. Paso Lateral
+('Paso Lateral',
+'Ejercicio de equilibrio y coordinación que fortalece piernas.',
+'Da pasos laterales controlados, llevando un pie hacia el lado y luego juntando el otro. Mantén postura erguida.',
+'Mejora equilibrio dinámico y coordinación',
+'Cerca de una pared o silla para apoyo. Pasos pequeños al inicio.',
+'Reducir amplitud de pasos.',
+240, NULL, NULL, false, true,
+(SELECT id FROM categories WHERE name = 'Equilibrio'),
+(SELECT id FROM intensities WHERE name = 'Moderado'),
+(SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
+'https://drive.google.com/file/d/1hCyporUKsOIuFiHz7PE3CfocJf-SYkUV/preview',
+'https://drive.google.com/uc?export=view&id=1hCyporUKsOIuFiHz7PE3CfocJf-SYkUV'),
+
+-- 18. Estiramiento de Gato-Vaca (Sentado)
+('Estiramiento de Gato-Vaca (Sentado)',
+'Ejercicio de movilidad espinal adaptado para realizar sentado.',
+'Sentado, arquea la espalda hacia atrás (vaca) y luego redondéala hacia adelante (gato). Movimientos suaves y coordinados con la respiración.',
+'Mejora movilidad de columna, alivia tensión en espalda',
+'Movimientos lentos y suaves. No forzar.',
+'Reducir rango de movimiento si hay molestia.',
+240, NULL, NULL, false, true,
+(SELECT id FROM categories WHERE name = 'Flexibilidad'),
+(SELECT id FROM intensities WHERE name = 'Suave'),
+(SELECT id FROM exercise_types WHERE name = 'Ejercicio Sentado'),
+'https://drive.google.com/file/d/1SH_qLOr5jaFQyiUTCY1-FjNcN5TmSS_x/preview',
+'https://drive.google.com/uc?export=view&id=1SH_qLOr5jaFQyiUTCY1-FjNcN5TmSS_x'),
+
+-- 19. Torsión Suave de Columna (Sentado)
+('Torsión Suave de Columna (Sentado)',
+'Ejercicio de movilidad para la columna vertebral.',
+'Sentado con espalda recta, gira el torso hacia un lado colocando una mano en el respaldo de la silla. Mantén y regresa al centro. Alterna lados.',
+'Mejora movilidad espinal y flexibilidad del torso',
+'Mantener cadera fija. Girar solo desde el torso.',
+'Reducir amplitud del giro.',
+240, NULL, NULL, false, true,
+(SELECT id FROM categories WHERE name = 'Flexibilidad'),
+(SELECT id FROM intensities WHERE name = 'Suave'),
+(SELECT id FROM exercise_types WHERE name = 'Ejercicio Sentado'),
+'https://drive.google.com/file/d/1yvNBjUb0zZ3VM1bu6ERSRNF0j05gkj2k/preview',
+'https://drive.google.com/uc?export=view&id=1yvNBjUb0zZ3VM1bu6ERSRNF0j05gkj2k'),
+
+-- 20. Sentadilla (PREMIUM)
+('Sentadilla',
+'Ejercicio fundamental de fortalecimiento de piernas y glúteos.',
+'De pie con pies al ancho de hombros, baja como si fueras a sentarte en una silla. Mantén la espalda recta y rodillas alineadas con los pies.',
+'Fortalece piernas, glúteos y core. Mejora funcionalidad',
+'No dejar que las rodillas sobrepasen los dedos de los pies. Usar silla de apoyo.',
+'Realizar con silla detrás para mayor seguridad.',
+NULL, 10, 2, true, true,
+(SELECT id FROM categories WHERE name = 'Fortalecimiento'),
+(SELECT id FROM intensities WHERE name = 'Intermedio'),
+(SELECT id FROM exercise_types WHERE name = 'Ejercicio de Pie'),
+'https://drive.google.com/file/d/1vUQbZSy_e1QeZTUj32FFO0iyBi40-41N/preview',
+'https://drive.google.com/uc?export=view&id=1vUQbZSy_e1QeZTUj32FFO0iyBi40-41N'),
+
+-- 21. Peso muerto con mancuernas (PREMIUM)
+('Peso muerto con mancuernas',
+'Ejercicio de fortalecimiento de espalda baja y piernas con pesas ligeras.',
+'De pie con mancuernas ligeras, inclínate hacia adelante desde las caderas manteniendo espalda recta. Regresa a posición inicial.',
+'Fortalece espalda baja, glúteos y piernas',
+'Usar pesos ligeros. Mantener espalda recta siempre.',
+'Comenzar sin peso hasta dominar la técnica.',
+NULL, 10, 2, true, true,
+(SELECT id FROM categories WHERE name = 'Fortalecimiento'),
+(SELECT id FROM intensities WHERE name = 'Intermedio'),
+(SELECT id FROM exercise_types WHERE name = 'Con Implementos'),
+'https://drive.google.com/file/d/1hUHxF3iDZ_2jGViFT3H6cqlaLS7SwkJ1/preview',
+'https://drive.google.com/uc?export=view&id=1hUHxF3iDZ_2jGViFT3H6cqlaLS7SwkJ1'),
+
+-- 22. Remo con Banda Elástica (PREMIUM)
+('Remo con Banda Elástica',
+'Ejercicio de fortalecimiento de espalda usando banda de resistencia.',
+'Sentado o de pie, sujeta la banda elástica y tira hacia atrás apretando los omóplatos. Regresa lentamente.',
+'Fortalece espalda superior y mejora postura',
+'Mantener hombros hacia abajo. Movimientos controlados.',
+'Usar banda con menos resistencia.',
+NULL, 10, 2, true, true,
+(SELECT id FROM categories WHERE name = 'Fortalecimiento'),
+(SELECT id FROM intensities WHERE name = 'Intermedio'),
+(SELECT id FROM exercise_types WHERE name = 'Con Implementos'),
+'https://drive.google.com/file/d/1uF9DfCtDFOA1teTO4K9LjgXrfG4naiKf/preview',
+'https://drive.google.com/uc?export=view&id=1uF9DfCtDFOA1teTO4K9LjgXrfG4naiKf');
+
 SELECT 'OK - Ejercicios insertados:' as status, COUNT(*) as cantidad FROM exercises;
 
 -- =====================================================
@@ -487,6 +648,28 @@ VALUES (
     (SELECT id FROM intensities WHERE name = 'Moderado')
 );
 
+-- RUTINA 5: Fuerza Funcional (PREMIUM)
+INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id)
+VALUES (
+    'Fuerza Funcional',
+    'Rutina premium de fortalecimiento intensivo con ejercicios avanzados. Requiere experiencia previa y buena condición física.',
+    30,
+    true,
+    (SELECT id FROM categories WHERE name = 'Fortalecimiento'),
+    (SELECT id FROM intensities WHERE name = 'Intermedio')
+);
+
+-- RUTINA 6: Movilidad Completa
+INSERT INTO routines (title, description, duration_minutes, is_premium, category_id, intensity_id)
+VALUES (
+    'Movilidad Completa',
+    'Rutina integral de movilidad y flexibilidad para todo el cuerpo. Ideal para mantener rango de movimiento y prevenir rigidez.',
+    22,
+    false,
+    (SELECT id FROM categories WHERE name = 'Movilidad'),
+    (SELECT id FROM intensities WHERE name = 'Suave')
+);
+
 SELECT 'OK - Rutinas insertadas:' as status, COUNT(*) as cantidad FROM routines;
 
 -- =====================================================
@@ -525,7 +708,29 @@ VALUES
 ((SELECT id FROM routines WHERE title = 'Equilibrio y Coordinación'),
  (SELECT id FROM exercises WHERE name = 'Marcha en el Sitio'), 3, 180, 0);
 
--- RUTINA 4: Cardio Activo y Suave (4 ejercicios)
+-- Completar RUTINA 1: Agregar ejercicio 5
+INSERT INTO routine_exercises (routine_id, exercise_id, exercise_order, duration_seconds, rest_seconds)
+VALUES
+((SELECT id FROM routines WHERE title = 'Calentamiento y Movilidad Matutina'),
+ (SELECT id FROM exercises WHERE name = 'Estiramiento de Gato-Vaca (Sentado)'), 5, 240, 0);
+
+-- Completar RUTINA 2: Agregar ejercicios 4 y 5
+INSERT INTO routine_exercises (routine_id, exercise_id, exercise_order, sets, repetitions, rest_seconds)
+VALUES
+((SELECT id FROM routines WHERE title = 'Fortalecimiento Suave en Casa'),
+ (SELECT id FROM exercises WHERE name = 'Sentarse y Levantarse de una Silla'), 4, 2, 10, 60),
+((SELECT id FROM routines WHERE title = 'Fortalecimiento Suave en Casa'),
+ (SELECT id FROM exercises WHERE name = 'Flexiones en la Pared'), 5, 2, 10, 0);
+
+-- Completar RUTINA 3: Agregar ejercicios 4 y 5  
+INSERT INTO routine_exercises (routine_id, exercise_id, exercise_order, duration_seconds, rest_seconds)
+VALUES
+((SELECT id FROM routines WHERE title = 'Equilibrio y Coordinación'),
+ (SELECT id FROM exercises WHERE name = 'Paso Lateral'), 4, 240, 60),
+((SELECT id FROM routines WHERE title = 'Equilibrio y Coordinación'),
+ (SELECT id FROM exercises WHERE name = 'Elevación Lateral de Pierna'), 5, NULL, 60);
+
+-- RUTINA 4: Cardio Activo y Suave (5 ejercicios)
 INSERT INTO routine_exercises (routine_id, exercise_id, exercise_order, duration_seconds, rest_seconds)
 VALUES
 ((SELECT id FROM routines WHERE title = 'Cardio Activo y Suave'),
@@ -533,7 +738,39 @@ VALUES
 ((SELECT id FROM routines WHERE title = 'Cardio Activo y Suave'),
  (SELECT id FROM exercises WHERE name = 'Puñetazos al Aire'), 2, 300, 60),
 ((SELECT id FROM routines WHERE title = 'Cardio Activo y Suave'),
- (SELECT id FROM exercises WHERE name = 'Elevación de Rodilla (Sentado)'), 3, 180, 0);
+ (SELECT id FROM exercises WHERE name = 'Elevación de Rodilla (Sentado)'), 3, 180, 60),
+((SELECT id FROM routines WHERE title = 'Cardio Activo y Suave'),
+ (SELECT id FROM exercises WHERE name = 'Jumping Jacks sin Salto'), 4, 240, 60),
+((SELECT id FROM routines WHERE title = 'Cardio Activo y Suave'),
+ (SELECT id FROM exercises WHERE name = 'Paso Lateral'), 5, 240, 0);
+
+-- RUTINA 5: Fuerza Funcional (5 ejercicios - PREMIUM)
+INSERT INTO routine_exercises (routine_id, exercise_id, exercise_order, sets, repetitions, rest_seconds)
+VALUES
+((SELECT id FROM routines WHERE title = 'Fuerza Funcional'),
+ (SELECT id FROM exercises WHERE name = 'Sentadilla'), 1, 3, 10, 90),
+((SELECT id FROM routines WHERE title = 'Fuerza Funcional'),
+ (SELECT id FROM exercises WHERE name = 'Peso muerto con mancuernas'), 2, 3, 10, 90),
+((SELECT id FROM routines WHERE title = 'Fuerza Funcional'),
+ (SELECT id FROM exercises WHERE name = 'Remo con Banda Elástica'), 3, 3, 10, 90),
+((SELECT id FROM routines WHERE title = 'Fuerza Funcional'),
+ (SELECT id FROM exercises WHERE name = 'Flexiones en la Pared'), 4, 3, 10, 90),
+((SELECT id FROM routines WHERE title = 'Fuerza Funcional'),
+ (SELECT id FROM exercises WHERE name = 'Sentarse y Levantarse de una Silla'), 5, 3, 15, 0);
+
+-- RUTINA 6: Movilidad Completa (5 ejercicios)
+INSERT INTO routine_exercises (routine_id, exercise_id, exercise_order, duration_seconds, rest_seconds)
+VALUES
+((SELECT id FROM routines WHERE title = 'Movilidad Completa'),
+ (SELECT id FROM exercises WHERE name = 'Rotación de Cuello'), 1, 180, 30),
+((SELECT id FROM routines WHERE title = 'Movilidad Completa'),
+ (SELECT id FROM exercises WHERE name = 'Rotación de Hombros'), 2, 180, 30),
+((SELECT id FROM routines WHERE title = 'Movilidad Completa'),
+ (SELECT id FROM exercises WHERE name = 'Círculos de Tobillo'), 3, 180, 30),
+((SELECT id FROM routines WHERE title = 'Movilidad Completa'),
+ (SELECT id FROM exercises WHERE name = 'Estiramiento de Gato-Vaca (Sentado)'), 4, 240, 30),
+((SELECT id FROM routines WHERE title = 'Movilidad Completa'),
+ (SELECT id FROM exercises WHERE name = 'Torsión Suave de Columna (Sentado)'), 5, 240, 0);
 
 SELECT 'OK - Relaciones rutina-ejercicio insertadas:' as status, COUNT(*) as cantidad FROM routine_exercises;
 

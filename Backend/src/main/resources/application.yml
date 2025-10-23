@@ -131,7 +131,7 @@ spring:
     
   jpa:
     hibernate:
-      ddl-auto: none  # none: no permite que Hibernate modifique el esquema, usa solo SQL scripts
+      ddl-auto: update  # update: permite que Hibernate actualice el esquema automáticamente
     show-sql: true
     properties:
       hibernate:
