@@ -8,8 +8,46 @@ type Props = {
   thumbnailUrl?: string | null;
 };
 
+/** Normaliza thumbnails */
+function normalizeThumb(u?: string | null): string | undefined {
+  if (!u) return undefined;
+
+  // Acepta URLs absolutas http/https;
+  let url: URL;
+  try {
+    url = new URL(u);
+  } catch {
+    return undefined;
+  }
+
+  const isHttp = url.protocol === "http:" || url.protocol === "https:";
+  if (!isHttp) return undefined;
+
+  const host = url.hostname;
+  const isDrive = host.includes("drive.google.com");
+  if (!isDrive) {
+    // No es Drive: la dejamos tal cual
+    return u;
+  }
+
+  let idMatch = url.pathname.match(/\/d\/([^/]+)/)?.[1];
+
+  if (!idMatch) {
+    const idQ = url.searchParams.get("id");
+    if (idQ) idMatch = idQ;
+  }
+
+  if (!idMatch) {
+    // No pudimos extraer ID, mejor no mostrar nada
+    return undefined;
+  }
+
+  return `https://drive.google.com/thumbnail?id=${idMatch}&sz=w1000`;
+}
+
 export default function RoutineCard({ id, title, minutes, intensityLevel, thumbnailUrl }: Props) {
   const navigate = useNavigate();
+  const imgSrc = normalizeThumb(thumbnailUrl);
 
   return (
     <article className="bg-[var(--card)] border border-[var(--border)] rounded-xl shadow-sm hover:shadow-md focus-within:shadow-md transition-shadow">
@@ -20,9 +58,9 @@ export default function RoutineCard({ id, title, minutes, intensityLevel, thumbn
         aria-label={`Abrir rutina: ${title}`}
       >
         <div className="aspect-[16/9] w-full bg-[var(--track)]">
-          {thumbnailUrl ? (
+          {imgSrc ? (
             <img
-              src={thumbnailUrl}
+              src={imgSrc}
               alt=""
               className="block h-full w-full object-cover"
               loading="lazy"

@@ -11,7 +11,7 @@ const API_BASE =
 const OAUTH_BASE = API_BASE.replace(/\/$/, "");
 const oauthUrl = (p: "google" | "facebook") => `${OAUTH_BASE}/oauth2/authorization/${p}`;
 
-const StepOAuth: React.FC<Props> = ({ onContinue }) => {
+const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
   const { isAuthenticated, loading, login, register } = useAuth();
 
   // Si ya hay sesión (p. ej., regresaste del OAuth), avanza automáticamente
@@ -55,20 +55,19 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
       } else {
         await register({ name, email, password, age });
       }
-      // ⚠️ SOLO avanzamos si la llamada NO lanzó error
-      onContinue();
+      onContinue(); // saltaremos StepName desde el wizard
     } catch (err: any) {
-        const msgRaw = String(err?.message ?? "");
-        const match = msgRaw.match(/HTTP\s+(\d{3})/i);
-        const status = match ? Number(match[1]) : undefined;
+      const msgRaw = String(err?.message ?? "");
+      const match = msgRaw.match(/HTTP\s+(\d{3})/i);
+      const status = match ? Number(match[1]) : undefined;
 
-        const msg =
-          status === 401 ? "Credenciales inválidas." :
+      const msg =
+        status === 401 ? "Credenciales inválidas." :
           status === 409 ? "Ya existe una cuenta con ese correo." :
-          status === 400 ? "Datos incompletos o inválidos." :
-          msgRaw || "No se pudo completar la operación.";
+            status === 400 ? "Datos incompletos o inválidos." :
+              msgRaw || "No se pudo completar la operación.";
 
-        setError(msg);
+      setError(msg);
     } finally {
       setSubmitting(false);
     }
@@ -105,9 +104,8 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
             role="tab"
             aria-selected={mode === "login"}
             onClick={() => setMode("login")}
-            className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] ${
-              mode === "login" ? "border-[var(--accent)]" : "border-[var(--border)]"
-            }`}
+            className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] ${mode === "login" ? "border-[var(--accent)]" : "border-[var(--border)]"
+              }`}
           >
             Iniciar sesión
           </button>
@@ -116,9 +114,8 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
             role="tab"
             aria-selected={mode === "register"}
             onClick={() => setMode("register")}
-            className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] ${
-              mode === "register" ? "border-[var(--accent)]" : "border-[var(--border)]"
-            }`}
+            className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] ${mode === "register" ? "border-[var(--accent)]" : "border-[var(--border)]"
+              }`}
           >
             Crear cuenta
           </button>
@@ -194,12 +191,12 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
 
           {error && (
             <div
-                role="alert"
-                aria-live="assertive"
-                className="rounded-lg border border-red-500/70 bg-[color:var(--danger-bg,rgba(244,63,94,.1))] text-[var(--fg)] text-sm px-3 py-2"
-              >
-                {error}
-              </div>
+              role="alert"
+              aria-live="assertive"
+              className="rounded-lg border border-red-500/70 bg-[color:var(--danger-bg,rgba(244,63,94,.1))] text-[var(--fg)] text-sm px-3 py-2"
+            >
+              {error}
+            </div>
           )}
 
           <button
@@ -215,7 +212,7 @@ const StepOAuth: React.FC<Props> = ({ onContinue }) => {
       <div className="mt-6">
         <button
           type="button"
-          onClick={() => onGuest?.()}
+          onClick={onGuest}
           className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)]"
         >
           Ahora no, continuar como invitado
