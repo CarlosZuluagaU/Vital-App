@@ -73,7 +73,14 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Considerar @Profile("dev")
 
                         // Endpoints públicos para pruebas (temporalmente)
-                        .requestMatchers("/api/exercises/**", "/api/routines/**").permitAll()
+                        //.requestMatchers("/api/exercises/**", "/api/routines/**").permitAll()
+
+                        // Endpoints públicos (acceso libre)
+                        .requestMatchers("/api/exercises/").permitAll()          // Todos los ejercicios (básicos y premium)
+                        .requestMatchers("/api/routines/").permitAll()           // Todas las rutinas
+                        .requestMatchers("/api/categories/").permitAll()         // Categorías
+                        .requestMatchers("/api/intensities/").permitAll()        // Intensidades
+                        .requestMatchers("/api/exercise-types/**").permitAll()
                         
                         // Endpoints que requieren plan básico o superior
                         .requestMatchers("/api/me/activities/**").hasRole("USER")
