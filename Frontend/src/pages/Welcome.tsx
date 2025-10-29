@@ -31,7 +31,7 @@ export default function Welcome() {
 
         {/* Botón de Google OAuth */}
         <div className="mb-4">
-          <GoogleLoginButton className="w-full" />
+          <GoogleLoginButton variant="themed" className="w-full" />
         </div>
 
         <div className="relative my-6">

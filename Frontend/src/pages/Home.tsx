@@ -18,7 +18,8 @@ export default function Home() {
 
   const target =
     profile?.level === "BASICO" ? "Suave" :
-    profile?.level === "INTERMEDIO" ? "Moderado" :
+    profile?.level === "MODERADO" ? "Moderado" :
+    profile?.level === "INTERMEDIO" ? "Intermedio" :
     undefined;
 
   React.useEffect(() => {

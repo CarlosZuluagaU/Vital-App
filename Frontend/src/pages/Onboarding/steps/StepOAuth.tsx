@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/Auth";
+import GoogleLoginButton from "../../../components/GoogleLoginButton";
+import { validatePassword, passwordsMatch, isValidEmail } from "../../../utils/validators";
 
 type Props = { onContinue: () => void; onGuest: () => void };
 
@@ -23,7 +25,7 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
 
   // Campos
   const [name, setName] = useState("");
-  const [age, setAge] = useState<number | undefined>(undefined); // opcional
+  const [age, setAge] = useState<number | undefined>(undefined);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -31,42 +33,45 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const emailOk = useMemo(() => /\S+@\S+\.\S+/.test(email), [email]);
-  const passOk = password.trim().length > 0;
-  const confirmOk = mode === "register" ? confirm === password && confirm.length > 0 : true;
+  // Validaciones
+  const emailOk = useMemo(() => isValidEmail(email), [email]);
+  const pwdCheck = useMemo(() => validatePassword(password), [password]);
+  const confirmOk = useMemo(() => passwordsMatch(password, confirm), [password, confirm]);
   const nameOk = mode === "register" ? name.trim().length > 0 : true;
 
   const canSubmit =
     mode === "login"
-      ? emailOk && passOk
-      : nameOk && emailOk && passOk && confirmOk;
+      ? emailOk && password.length > 0
+      : nameOk && emailOk && pwdCheck.ok && confirmOk;
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!canSubmit || submitting) return;
-
     setSubmitting(true);
     setError(null);
 
     try {
       if (mode === "login") {
-        // Backend espera usernameOrEmail → usamos el email
+        if (!emailOk) throw new Error("Correo inválido.");
         await login({ usernameOrEmail: email, password });
       } else {
+        if (!pwdCheck.ok) throw new Error(pwdCheck.errors.join(" "));
+        if (!confirmOk) throw new Error("Las contraseñas no coinciden.");
         await register({ name, email, password, age });
       }
-      onContinue(); // saltaremos StepName desde el wizard
+      onContinue();
     } catch (err: any) {
       const msgRaw = String(err?.message ?? "");
       const match = msgRaw.match(/HTTP\s+(\d{3})/i);
       const status = match ? Number(match[1]) : undefined;
-
       const msg =
-        status === 401 ? "Credenciales inválidas." :
-          status === 409 ? "Ya existe una cuenta con ese correo." :
-            status === 400 ? "Datos incompletos o inválidos." :
-              msgRaw || "No se pudo completar la operación.";
-
+        status === 401
+          ? "Credenciales no válidas."
+          : status === 409
+          ? "Ya existe una cuenta con ese correo."
+          : status === 400
+          ? "Datos incompletos o inválidos."
+          : msgRaw || "No se pudo completar la operación.";
       setError(msg);
     } finally {
       setSubmitting(false);
@@ -80,20 +85,8 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
         Para recordar tu progreso, vincula una cuenta. También puedes continuar como invitado.
       </p>
 
-      {/* Botones OAuth */}
       <div className="mt-4 grid gap-3">
-        <a
-          href={oauthUrl("google")}
-          className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
-        >
-          Continuar con Google
-        </a>
-        <a
-          href={oauthUrl("facebook")}
-          className="inline-flex items-center justify-center min-h-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)] font-semibold"
-        >
-          Continuar con Facebook
-        </a>
+        <GoogleLoginButton variant="themed" className="w-full" />
       </div>
 
       {/* Tabs login/registro */}
@@ -104,8 +97,9 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
             role="tab"
             aria-selected={mode === "login"}
             onClick={() => setMode("login")}
-            className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] ${mode === "login" ? "border-[var(--accent)]" : "border-[var(--border)]"
-              }`}
+            className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] ${
+              mode === "login" ? "border-[var(--accent)]" : "border-[var(--border)]"
+            }`}
           >
             Iniciar sesión
           </button>
@@ -114,8 +108,9 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
             role="tab"
             aria-selected={mode === "register"}
             onClick={() => setMode("register")}
-            className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] ${mode === "register" ? "border-[var(--accent)]" : "border-[var(--border)]"
-              }`}
+            className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] ${
+              mode === "register" ? "border-[var(--accent)]" : "border-[var(--border)]"
+            }`}
           >
             Crear cuenta
           </button>
@@ -142,7 +137,9 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
                   type="number"
                   min={1}
                   value={age ?? ""}
-                  onChange={(e) => setAge(e.target.value ? Number(e.target.value) : undefined)}
+                  onChange={(e) =>
+                    setAge(e.target.value ? Number(e.target.value) : undefined)
+                  }
                   className="min-h-[44px] px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)]"
                 />
               </label>
@@ -156,8 +153,13 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="min-h-[44px] px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)]"
+              className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] text-[var(--fg)] ${
+                email.length > 0 && !emailOk ? "border-red-500" : "border-[var(--border)]"
+              }`}
             />
+            {email.length > 0 && !emailOk && (
+              <span className="text-xs text-red-500">Correo inválido.</span>
+            )}
           </label>
 
           <label className="grid gap-1">
@@ -167,8 +169,19 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="min-h-[44px] px-3 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--fg)]"
+              className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] text-[var(--fg)] ${
+                password.length > 0 && !pwdCheck.ok
+                  ? "border-red-500"
+                  : "border-[var(--border)]"
+              }`}
             />
+            {mode === "register" && !pwdCheck.ok && password.length > 0 && (
+              <ul className="mt-1 text-xs text-red-500 list-disc pl-5">
+                {pwdCheck.errors.map((e, i) => (
+                  <li key={i}>{e}</li>
+                ))}
+              </ul>
+            )}
           </label>
 
           {mode === "register" && (
@@ -179,9 +192,11 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
                 required
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
-                className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] text-[var(--fg)]
-                  ${confirm.length > 0 && !confirmOk ? "border-red-500" : "border-[var(--border)]"}
-                `}
+                className={`min-h-[44px] px-3 rounded-lg border bg-[var(--card)] text-[var(--fg)] ${
+                  confirm.length > 0 && !confirmOk
+                    ? "border-red-500"
+                    : "border-[var(--border)]"
+                }`}
               />
               {confirm.length > 0 && !confirmOk && (
                 <span className="text-xs text-red-500">Las contraseñas no coinciden.</span>
@@ -193,7 +208,7 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
             <div
               role="alert"
               aria-live="assertive"
-              className="rounded-lg border border-red-500/70 bg-[color:var(--danger-bg,rgba(244,63,94,.1))] text-[var(--fg)] text-sm px-3 py-2"
+              className="rounded-lg border border-red-500/70 bg-[rgba(244,63,94,.1)] text-[var(--fg)] text-sm px-3 py-2"
             >
               {error}
             </div>
@@ -204,7 +219,13 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
             disabled={!canSubmit || submitting}
             className="mt-1 min-h-[44px] px-4 rounded-lg font-semibold bg-[var(--accent)] text-[var(--bg)] disabled:opacity-60"
           >
-            {submitting ? (mode === "login" ? "Entrando…" : "Creando…") : mode === "login" ? "Entrar" : "Crear cuenta"}
+            {submitting
+              ? mode === "login"
+                ? "Entrando…"
+                : "Creando…"
+              : mode === "login"
+              ? "Entrar"
+              : "Crear cuenta"}
           </button>
         </form>
       </div>

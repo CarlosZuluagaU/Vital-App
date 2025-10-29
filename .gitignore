@@ -1,20 +1,56 @@
-# Archivos de prueba locales
-test-user*.json
-login-user.json
+# ===== ENVIRONMENT =====
+.env
+.env.*.local
 
-# Logs
-*.log
-
-# OS
+# ===== OS =====
 .DS_Store
 Thumbs.db
 
-# IDE
+# ===== IDE =====
 .vscode/
+!.vscode/extensions.json
 .idea/
+*.iml
+*.ipr
+*.iws
 *.swp
 *.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
-# Environment
-.env
-.env.local
+# ===== LOGS =====
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ===== BACKEND (Maven/Java) =====
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ===== FRONTEND (Node/Vite) =====
+node_modules/
+dist/
+dist-ssr/
+*.local
+*.vite
+
+# ===== TEST FILES =====
+test-user*.json
+test-frontend-user.json
+test-new-user.json
+login-user.json

@@ -18,7 +18,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource; // <-- IMPORTACIÓN AÑADIDA
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.vitalapp.service.implementation.CustomOAuth2UserService;
@@ -96,7 +96,6 @@ public class SecurityConfig {
                         .requestMatchers("/api/me/activities/**").hasRole("USER")
 
                         // Endpoints que requieren plan premium
-                        // --- CÓDIGO CORREGIDO ---
                         .requestMatchers("/api/exercises/premium/**").access(new WebExpressionAuthorizationManager("@subscriptionAccessEvaluator.hasPremiumAccess(authentication)"))
                         .requestMatchers("/api/multicomponent/**").access(new WebExpressionAuthorizationManager("@subscriptionAccessEvaluator.hasPremiumAccess(authentication)"))
 
@@ -111,8 +110,8 @@ public class SecurityConfig {
                         )
                         .successHandler(oAuth2AuthenticationSuccessHandler)
                 )
-                .formLogin(form -> form.disable())  // Deshabilitar formulario de login por defecto
-                .httpBasic(basic -> basic.disable())  // Deshabilitar HTTP Basic
+                .formLogin(form -> form.disable()) // Deshabilitar formulario de login por defecto
+                .httpBasic(basic -> basic.disable()) // Deshabilitar HTTP Basic
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -128,7 +127,6 @@ public class SecurityConfig {
 
         // Temporalmente permitir todos los orígenes para pruebas
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        // En producción usar: configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://www.vitalapp.com"));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));

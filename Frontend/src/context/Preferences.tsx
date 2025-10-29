@@ -5,7 +5,7 @@ export type FontSize = "sm" | "md" | "lg";
 
 export type Profile = {
   name?: string;
-  level?: "BASICO" | "INTERMEDIO";
+  level?: "BASICO" | "MODERADO" | "INTERMEDIO";
 };
 
 type Prefs = {
