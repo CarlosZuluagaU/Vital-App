@@ -69,6 +69,7 @@ app:
   # OAuth2 settings
   oauth2:
     authorizedRedirectUris:
+      - http://localhost:5173/oauth2/redirect
       - http://localhost:3000/oauth2/redirect
 
 logging:

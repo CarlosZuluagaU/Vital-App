@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource; // <-- IMPORTACIÓN AÑADIDA
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.vitalapp.service.implementation.CustomOAuth2UserService;
 import com.vitalapp.service.implementation.CustomUserDetailsService;
 import com.vitalapp.service.implementation.SubscriptionAccessEvaluator;
 import com.vitalapp.util.JwtAuthenticationFilter;
@@ -38,6 +39,12 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
+
+    @Autowired
+    private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -67,6 +74,9 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        
+                        // OAuth2 endpoints
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
 
                         // Endpoints de desarrollo (Swagger, H2) - Se recomienda activarlos solo en el perfil 'dev'
                         .requestMatchers("/h2-console/**").permitAll() // Considerar @Profile("dev")
@@ -93,6 +103,16 @@ public class SecurityConfig {
                         // Todos los demás endpoints requieren autenticación
                         .anyRequest().authenticated()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/oauth2/authorization/google")  // Deshabilita página de login por defecto
+                        .defaultSuccessUrl("http://localhost:5173/oauth2/redirect", true)  // URL por defecto después de login exitoso
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                )
+                .formLogin(form -> form.disable())  // Deshabilitar formulario de login por defecto
+                .httpBasic(basic -> basic.disable())  // Deshabilitar HTTP Basic
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -16,7 +16,6 @@ import org.springframework.web.util.UriComponentsBuilder;
 import com.vitalapp.persistence.entity.UserEntity;
 import com.vitalapp.persistence.entity.UserEntity.AuthProvider;
 import com.vitalapp.persistence.repository.UserRepository;
-import com.vitalapp.service.interfaces.AuthService;
 import com.vitalapp.util.JwtTokenProvider;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,9 +29,6 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private AuthService authService;
 
     @Value("${app.oauth2.authorizedRedirectUris:}")
     private List<String> authorizedRedirectUris;
@@ -62,7 +58,12 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
             throw new RuntimeException("Unauthorized Redirect URI");
         }
 
-        String targetUrl = redirectUri.orElse(getDefaultTargetUrl());
+        // Usar la primera URI autorizada como default si no se proporciona redirect_uri
+        String targetUrl = redirectUri.orElse(
+            authorizedRedirectUris != null && !authorizedRedirectUris.isEmpty() 
+                ? authorizedRedirectUris.get(0) 
+                : "http://localhost:5173/oauth2/redirect"
+        );
 
         OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
@@ -72,10 +73,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // Generar JWT token
         String token = jwtTokenProvider.generateTokenFromUserId(user.getId());
 
-        return UriComponentsBuilder.fromUriString(targetUrl)
+        String finalUrl = UriComponentsBuilder.fromUriString(targetUrl)
                 .queryParam("token", token)
-                .queryParam("error", "")
                 .build().toUriString();
+
+        logger.info("OAuth2 Success - Redirecting to: " + finalUrl);
+        
+        return finalUrl;
     }
 
     private UserEntity processOAuth2User(OAuth2User oAuth2User, Authentication authentication) {
@@ -163,7 +167,7 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         String username = baseUsername;
         int counter = 1;
         
-        while (authService.existsByUsername(username)) {
+        while (userRepository.findByUsername(username).isPresent()) {
             username = baseUsername + counter;
             counter++;
         }

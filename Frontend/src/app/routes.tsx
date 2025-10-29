@@ -8,6 +8,7 @@ import RoutineDetail from "../pages/RoutineDetail";
 import WeeklySummary from "../pages/WeeklySummary";
 import RoutinePlayer from "../pages/RoutinePlayer";
 import SUSQuestionnaire from "../pages/SUSQuestionnaire";
+import OAuth2RedirectHandler from "../pages/OAuth2RedirectHandler";
 import { RequireProfile } from "../routes/guards/RequireProfile";
 
 export const router = createBrowserRouter([
@@ -16,6 +17,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/welcome", element: <Welcome /> },
       { path: "/onboarding", element: <OnboardingWizard /> },
+      { path: "/oauth2/redirect", element: <OAuth2RedirectHandler /> },
       {
         element: <RequireProfile />,
         children: [
