@@ -3,7 +3,7 @@
 export interface RoutineSummary {
   id: string;
   title: string;
-  level: 'basico' | 'intermedio';
+  level: 'basico' | 'moderado' | 'intermedio';
 }
 
 export interface Exercise {

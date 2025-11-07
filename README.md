@@ -3,8 +3,33 @@
 Aplicación (web) para promover la actividad física y el envejecimiento activo en personas mayores.
 Este repositorio contiene Frontend (React + Vite + Tailwind) y Backend (Java 17 + Spring Boot 3), y un entorno de base de datos con Docker (MySQL + Adminer).
 
+## 🚀 INICIO RÁPIDO (RECOMENDADO)
+
+**¿Primera vez o quieres iniciar todo el sistema?**
+
+```powershell
+.\start-all.ps1
+```
+
+Este script hace TODO automáticamente:
+- ✅ Verifica e inicia Docker Desktop
+- ✅ Construye e inicia Backend + MySQL
+- ✅ Verifica y carga los datos (7 rutinas, 22 ejercicios)
+- ✅ Inicia el Frontend
+- ✅ Abre automáticamente el navegador
+
+**Sistema completo listo en ~60 segundos** 🎉
+
+### Accesos rápidos después de iniciar:
+- **Frontend:** http://localhost:5173 (se abre automáticamente)
+- **Backend API:** http://localhost:8080
+- **Adminer (BD):** http://localhost:8082
+
+---
+
 ## Tabla de contenido
 
+- [🚀 Inicio Rápido](#-inicio-rápido-recomendado)
 - [Arquitectura y alcance del MVP](#arquitectura-y-alcance-del-mvp)
 - [Requisitos](#requisitos)
 - [Estructura de carpetas](#estructura-de-carpetas)
@@ -12,6 +37,7 @@ Este repositorio contiene Frontend (React + Vite + Tailwind) y Backend (Java 17 
 	- [1) Base de datos (Docker)](#1-base-de-datos-docker)
 	- [2) Backend (Spring Boot)](#2-backend-spring-boot)
 	- [3) Frontend (React + Vite + Tailwind)](#3-frontend-react--vite--tailwind)
+- [Scripts disponibles](#scripts-disponibles)
 - [Endpoints del backend](#endpoints-del-backend)
 - [Flujos de prueba manual (checklist)](#flujos-de-prueba-manual-checklist)
 - [Solución de problemas comunes](#solución-de-problemas-comunes)
@@ -91,62 +117,69 @@ Vital-App/
 
 ## Configuración del entorno
 
-### 1) Base de datos (Docker)
+### Opción A: Inicio automático (RECOMENDADO)
 
-El `compose.yml` levanta MySQL y Adminer:
+```powershell
+.\start-all.ps1
+```
 
-```bash
-docker compose up -d
+¡Listo! El script inicia todo automáticamente.
+
+### Opción B: Inicio manual por componentes
+
+### 1) Base de datos y Backend (Docker)
+
+El sistema ahora funciona completamente dockerizado:
+
+```powershell
+.\build-docker.ps1
+```
+
+Este script:
+- ✅ Construye la imagen del Backend
+- ✅ Inicia MySQL (puerto 3307) + Backend (puerto 8080) + Adminer (puerto 8082)
+- ✅ Verifica que los servicios estén healthy
+- ✅ Carga automáticamente 7 rutinas y 22 ejercicios si la BD está vacía
+
+**Accesos:**
+- **Backend API:** http://localhost:8080
+- **Adminer (navegador BD):** http://localhost:8082
+  - Sistema: MySQL
+  - Servidor: mysql
+  - Usuario: root
+  - Contraseña: root1234
+  - Base de datos: vital_app_db
+
+**Verificar que todo funciona:**
+```powershell
+# Ver contenedores corriendo
 docker ps
-docker logs vitalapp-mysql --tail 20
-docker exec -it vitalapp-mysql mysql -uvital -pvital123 -e "SELECT DATABASE();" vitalapp
+
+# Ver logs del backend
+docker logs vitalapp-backend --tail 30
+
+# Probar API
+Invoke-RestMethod http://localhost:8080/api/routines
 ```
 
-**MySQL:** `localhost:3306`, DB: `vitalapp`, user: `vital`, pass: `vital123`
+### 2) Frontend (React + Vite + Tailwind)
 
-**Adminer:** http://localhost:8082
-
-	- Server: mysql
-	- User: vital
-	- Password: vital123
-	- Database: vitalapp
-
-Para esta v1 no es obligatorio que el backend persista en MySQL; el contenedor es para dejar el entorno de desarrollo listo.
-
-### 2) Backend (Spring Boot)
-
-Config: `Backend/src/main/resources/application.yml`
-(ya preparado para MySQL si luego activan JPA; ahora no es requerido)
-
-Correr en local:
-
-```bash
-cd Backend
-mvn clean package -DskipTests
-mvn spring-boot:run
+**Opción A: Script automático**
+```powershell
+.\start-frontend.ps1
 ```
 
-Salud: http://localhost:8080/api/health
- → OK
-
-(Opcional) Swagger: http://localhost:8080/swagger-ui/index.html
-
-Si usas `mvnw` en Windows, ejecuta `mvnw.cmd`. Asegúrate de que JAVA_HOME esté definido y visible para cmd.exe.
-
-### 3) Frontend (React + Vite + Tailwind)
-
-Variables de entorno (crear `Frontend/.env`):
-
-```env
-VITE_API_BASE=http://localhost:8080
-```
-
-Instalar y correr:
-
-```bash
+**Opción B: Manual**
+```powershell
 cd Frontend
 npm install
 npm run dev
+```
+
+El archivo `.env` ya está configurado correctamente:
+```env
+VITE_API_BASE=http://localhost:8080
+VITE_AUTH_MODE=cookie
 ```
 
 Abrir: http://localhost:5173
@@ -156,6 +189,27 @@ Abrir: http://localhost:5173
 ```css
 @import "tailwindcss";
 ```
+
+## Scripts disponibles
+
+| Script | Descripción |
+|--------|-------------|
+| `start-all.ps1` | **RECOMENDADO** - Inicia TODO el sistema automáticamente |
+| `build-docker.ps1` | Construye e inicia Backend + MySQL + Adminer |
+| `start-frontend.ps1` | Inicia solo el Frontend (requiere backend corriendo) |
+| `populate-database.ps1` | Carga datos iniciales en la BD si está vacía |
+
+### Datos incluidos automáticamente:
+- ✅ **7 rutinas** de ejercicio (diferentes intensidades y duraciones)
+- ✅ **22 ejercicios** clasificados por categoría
+- ✅ **5 categorías** (Fuerza, Equilibrio, Flexibilidad, Cardio, Movilidad)
+- ✅ **4 niveles de intensidad** (Muy Suave, Suave, Moderada, Alta)
+- ✅ **30 relaciones** rutina-ejercicio
+
+### Persistencia de datos:
+- ✅ Los datos se mantienen aunque reinicies Docker
+- ✅ Los usuarios que registres desde el frontend se guardan permanentemente
+- ✅ Volumen Docker `mysqldata` mantiene toda la información
 
 
 ## Endpoints del backend

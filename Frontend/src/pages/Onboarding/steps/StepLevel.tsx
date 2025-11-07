@@ -9,16 +9,21 @@ const OPTIONS = [
     desc: "Poca actividad. Ejercicios suaves y seguros.",
   },
   {
-    key: "INTERMEDIO" as const,
-    title: "Intermedio",
+    key: "MODERADO" as const,
+    title: "Moderado",
     desc: "Actividad regular. Retos moderados.",
   },
+  {
+    key: "INTERMEDIO" as const,
+    title: "Intermedio",
+    desc: "Activo. Ejercicios algo desafiantes.",
+  }
 ];
 
 export default function StepLevel({ value, onChange, onPrev, onNext }:{
   value: Profile; onChange:(p:Profile)=>void; onPrev:()=>void; onNext:()=>void;
 }) {
-  const [level, setLevel] = useState<"BASICO"|"INTERMEDIO">(value.level ?? "BASICO");
+  const [level, setLevel] = useState<"BASICO"|"MODERADO"|"INTERMEDIO">(value.level ?? "BASICO");
 
   return (
     <div>

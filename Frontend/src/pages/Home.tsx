@@ -18,14 +18,17 @@ export default function Home() {
 
   const target =
     profile?.level === "BASICO" ? "Suave" :
-    profile?.level === "INTERMEDIO" ? "Moderado" :
+    profile?.level === "MODERADO" ? "Moderado" :
+    profile?.level === "INTERMEDIO" ? "Intermedio" :
     undefined;
 
   React.useEffect(() => {
     let mounted = true;
     const load = async () => {
       if (authLoading) return;
-      if (!isAuthenticated) { setAll([]); setLoading(false); return; }
+
+      //Se modificado para permitir ver rutinas sin estar autenticado en invitado
+      //if (!isAuthenticated) { setAll([]); setLoading(false); return; }
       setLoading(true); setError(null);
       try {
         const a = target ? await getRoutines({ intensity: target }) : await getRoutines();
@@ -84,10 +87,10 @@ export default function Home() {
                 </div>
               </div>
             ))}
-          </div>
-        ) : !isAuthenticated ? (
+          </div> //Quitar la autenticación para ver rutinas
+        ) /*: !isAuthenticated ? (
           <div className="text-sm text-[var(--fg-muted)]">Inicia sesión para ver tus rutinas.</div>
-        ) : error ? (
+        ) */ : error ? (
           <div className="text-red-500 text-sm">{error}</div>
         ) : (
           <>

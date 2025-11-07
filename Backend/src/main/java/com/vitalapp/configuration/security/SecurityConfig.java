@@ -18,9 +18,10 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.expression.WebExpressionAuthorizationManager;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource; // <-- IMPORTACIÓN AÑADIDA
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import com.vitalapp.service.implementation.CustomOAuth2UserService;
 import com.vitalapp.service.implementation.CustomUserDetailsService;
 import com.vitalapp.service.implementation.SubscriptionAccessEvaluator;
 import com.vitalapp.util.JwtAuthenticationFilter;
@@ -38,6 +39,12 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Autowired
+    private CustomOAuth2UserService customOAuth2UserService;
+
+    @Autowired
+    private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -67,25 +74,44 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        
+                        // OAuth2 endpoints
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
 
                         // Endpoints de desarrollo (Swagger, H2) - Se recomienda activarlos solo en el perfil 'dev'
                         .requestMatchers("/h2-console/**").permitAll() // Considerar @Profile("dev")
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Considerar @Profile("dev")
 
                         // Endpoints públicos para pruebas (temporalmente)
-                        .requestMatchers("/api/exercises/**", "/api/routines/**").permitAll()
+                        //.requestMatchers("/api/exercises/**", "/api/routines/**").permitAll()
+
+                        // Endpoints públicos (acceso libre)
+                        .requestMatchers("/api/exercises/").permitAll()          // Todos los ejercicios (básicos y premium)
+                        .requestMatchers("/api/routines/").permitAll()           // Todas las rutinas
+                        .requestMatchers("/api/categories/").permitAll()         // Categorías
+                        .requestMatchers("/api/intensities/").permitAll()        // Intensidades
+                        .requestMatchers("/api/exercise-types/**").permitAll()
                         
                         // Endpoints que requieren plan básico o superior
                         .requestMatchers("/api/me/activities/**").hasRole("USER")
 
                         // Endpoints que requieren plan premium
-                        // --- CÓDIGO CORREGIDO ---
                         .requestMatchers("/api/exercises/premium/**").access(new WebExpressionAuthorizationManager("@subscriptionAccessEvaluator.hasPremiumAccess(authentication)"))
                         .requestMatchers("/api/multicomponent/**").access(new WebExpressionAuthorizationManager("@subscriptionAccessEvaluator.hasPremiumAccess(authentication)"))
 
                         // Todos los demás endpoints requieren autenticación
                         .anyRequest().authenticated()
                 )
+                .oauth2Login(oauth2 -> oauth2
+                        .loginPage("/oauth2/authorization/google")  // Deshabilita página de login por defecto
+                        .defaultSuccessUrl("http://localhost:5173/oauth2/redirect", true)  // URL por defecto después de login exitoso
+                        .userInfoEndpoint(userInfo -> userInfo
+                                .userService(customOAuth2UserService)
+                        )
+                        .successHandler(oAuth2AuthenticationSuccessHandler)
+                )
+                .formLogin(form -> form.disable()) // Deshabilitar formulario de login por defecto
+                .httpBasic(basic -> basic.disable()) // Deshabilitar HTTP Basic
                 .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
@@ -101,7 +127,6 @@ public class SecurityConfig {
 
         // Temporalmente permitir todos los orígenes para pruebas
         configuration.setAllowedOriginPatterns(Arrays.asList("*"));
-        // En producción usar: configuration.setAllowedOrigins(Arrays.asList("http://localhost:3000", "https://www.vitalapp.com"));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));

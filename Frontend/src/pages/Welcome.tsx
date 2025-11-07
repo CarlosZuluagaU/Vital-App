@@ -1,4 +1,5 @@
 import { A11yButton } from "../components/a11y/A11yButton";
+import GoogleLoginButton from "../components/GoogleLoginButton";
 import { usePrefs } from "../context/Preferences";
 import { useNavigate } from "react-router-dom";
 
@@ -27,6 +28,20 @@ export default function Welcome() {
           Tu compañero personal para mantenerte activo y saludable.
           Ejercicios diseñados especialmente para adultos mayores.
         </p>
+
+        {/* Botón de Google OAuth */}
+        <div className="mb-4">
+          <GoogleLoginButton variant="themed" className="w-full" />
+        </div>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-[var(--border)]"></div>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-[var(--card)] px-2 text-[var(--fg-muted)]">O continúa con</span>
+          </div>
+        </div>
 
         <A11yButton className="w-full mb-3" onClick={() => nav("/onboarding")}>
           Crear Mi Perfil
