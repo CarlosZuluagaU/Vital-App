@@ -11,38 +11,32 @@ type Props = {
 /** Normaliza thumbnails */
 function normalizeThumb(u?: string | null): string | undefined {
   if (!u) return undefined;
+  let idMatch: string | null = null;
 
-  // Acepta URLs absolutas http/https;
-  let url: URL;
   try {
-    url = new URL(u);
+    const url = new URL(u);
+    const host = url.hostname;
+
+    // Si no es http(s), ignoramos
+    if (!/^https?:$/.test(url.protocol)) return undefined;
+
+    // 🎯 Si no es Google Drive, devolvemos tal cual
+    if (!host.includes("drive.google.com")) return u;
+
+    // Extraer ID según tipo de enlace
+    idMatch =
+      url.pathname.match(/\/d\/([^/]+)/)?.[1] || // /file/d/ID/
+      url.searchParams.get("id") ||              // ?id=ID
+      url.pathname.match(/\/folders\/([^/]+)/)?.[1] || // /folders/ID
+      null;
+
+    if (!idMatch) return undefined;
+
+    // ✅ Miniatura estándar de Google Drive
+    return `https://drive.google.com/thumbnail?id=${idMatch}&sz=w1000`;
   } catch {
     return undefined;
   }
-
-  const isHttp = url.protocol === "http:" || url.protocol === "https:";
-  if (!isHttp) return undefined;
-
-  const host = url.hostname;
-  const isDrive = host.includes("drive.google.com");
-  if (!isDrive) {
-    // No es Drive: la dejamos tal cual
-    return u;
-  }
-
-  let idMatch = url.pathname.match(/\/d\/([^/]+)/)?.[1];
-
-  if (!idMatch) {
-    const idQ = url.searchParams.get("id");
-    if (idQ) idMatch = idQ;
-  }
-
-  if (!idMatch) {
-    // No pudimos extraer ID, mejor no mostrar nada
-    return undefined;
-  }
-
-  return `https://drive.google.com/thumbnail?id=${idMatch}&sz=w1000`;
 }
 
 export default function RoutineCard({ id, title, minutes, intensityLevel, thumbnailUrl }: Props) {

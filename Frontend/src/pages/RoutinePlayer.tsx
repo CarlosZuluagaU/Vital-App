@@ -1,16 +1,15 @@
-import React from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { getRoutineById } from "../hooks/useApi";
 import ExercisePlayer, { type ExerciseMini } from "../components/ExercisePlayer";
+import { fireMascotCue } from "../components/pet/VitaAssistant";
 
 type Json = Record<string, unknown>;
 const asNum = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 const asStr = (v: unknown) => (typeof v === "string" && v.trim() !== "" ? v : undefined);
 const asArr = (v: unknown): Json[] => (Array.isArray(v) ? (v as Json[]) : []);
 
-/* ======================
-   Formato local de fecha (no UTC)
-   ====================== */
+/* Formato local de fecha (no UTC) */
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const toLocalISODate = (t: number) => {
   const d = new Date(t);
@@ -20,9 +19,7 @@ const toLocalISODate = (t: number) => {
   return `${y}-${m}-${day}`; // YYYY-MM-DD en zona local
 };
 
-/* ======================
-   Persistencia de sesiones
-   ====================== */
+/* Persistencia de sesiones */
 type FinishedSession = {
   routineId: number;
   title?: string;
@@ -49,9 +46,7 @@ function appendToDayBucket(s: FinishedSession) {
   localStorage.setItem(key, JSON.stringify(bucket));
 }
 
-/* ======================
-   Normalización de ejercicios
-   ====================== */
+/* Normalización de ejercicios */
 function toMini(e: Json): ExerciseMini {
   const rawName =
     asStr((e as Json).exerciseName) ??
@@ -129,9 +124,7 @@ function extractExercises(routine: Json | null | undefined): ExerciseMini[] {
   });
 }
 
-/* ======================
-   Progreso en vivo
-   ====================== */
+/* Progreso en vivo */
 type Progress = {
   routineId: number;
   startedAt: number;
@@ -167,21 +160,89 @@ export default function RoutinePlayer() {
   const location = useLocation() as { state?: { routine?: Json; exercises?: ExerciseMini[] } };
   const routineId = id ? Number(id) : NaN;
 
-  const [loading, setLoading] = React.useState(true);
-  const [routine, setRoutine] = React.useState<Json | null>(null);
-  const [exercises, setExercises] = React.useState<ExerciseMini[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [routine, setRoutine] = useState<Json | null>(null);
+  const [exercises, setExercises] = useState<ExerciseMini[]>([]);
 
-  const [isRunning, setIsRunning] = React.useState(true);
-  const [elapsed, setElapsed] = React.useState(0);
-  const [index, setIndex] = React.useState(0);
+  const [isRunning, setIsRunning] = useState(true);
+  const [elapsed, setElapsed] = useState(0);
+  const [index, setIndex] = useState(0);
 
   // Pantalla de finalización
-  const [finished, setFinished] = React.useState(false);
+  const [finished, setFinished] = useState(false);
 
-  // Ref para quitar el listener de teclado
-  const keyHandlerRef = React.useRef<(e: KeyboardEvent) => void>();
+  // Refs para quitar el listener de teclado y controlar mitad
+  const keyHandlerRef = useRef<((e: KeyboardEvent) => void) | null>(null);
+  const halfFired = useRef(false);
+  const lastMotivationMinute = useRef(0); // Para rastrear cada 5 minutos
 
-  React.useEffect(() => {
+  const total = useMemo(() => {
+    const s = exercises.reduce((a, e) => a + (e.durationSeconds ?? 0), 0);
+    return s || Math.max(1, exercises.length * 60);
+  }, [exercises]);
+
+  useEffect(() => {
+    halfFired.current = false;
+    lastMotivationMinute.current = 0;
+  }, [routineId]);
+
+  useEffect(() => {
+    if (halfFired.current || finished || exercises.length === 0) return;
+    
+    // Calculamos el progreso basándonos principalmente en ejercicios completados
+    const progressByExercise = (index + 1) / exercises.length;
+    
+    // Si tenemos tiempo total, también lo consideramos
+    const progressByTime = total > 0 ? elapsed / total : 0;
+    
+    // Usamos el progreso por ejercicios como principal, o por tiempo si no hay ejercicios suficientes
+    const currentProgress = exercises.length > 0 ? progressByExercise : progressByTime;
+    
+    console.debug(
+      "[half-check]",
+      { 
+        index, 
+        exercisesLength: exercises.length, 
+        progressByExercise: progressByExercise.toFixed(2),
+        progressByTime: progressByTime.toFixed(2),
+        currentProgress: currentProgress.toFixed(2)
+      }
+    );
+
+    if (currentProgress >= 0.5) {
+      halfFired.current = true;
+      console.debug("[half-cue] ¡Mitad alcanzada!");
+      fireMascotCue({ mood: "ok", msg: "¡Vas por la mitad! 💪 ¡Sigue así!", ms: 3000 });
+    }
+  }, [index, exercises.length, finished, elapsed, total]);
+
+  // Motivación cada 5 minutos
+  useEffect(() => {
+    if (finished) return;
+    
+    const currentMinute = Math.floor(elapsed / 60);
+    const motivationInterval = 5; // cada 5 minutos
+    
+    // Verificar si pasamos un múltiplo de 5 minutos
+    if (currentMinute > 0 && 
+        currentMinute % motivationInterval === 0 && 
+        currentMinute !== lastMotivationMinute.current) {
+      lastMotivationMinute.current = currentMinute;
+      
+      const messages = [
+        "¡Sigue así! 💪",
+        "¡Lo estás haciendo genial! 🌟",
+        "¡Continúa con esa energía! ⚡",
+        "¡Vas muy bien! 🎯",
+        "¡No te rindas! 🔥"
+      ];
+      const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+      
+      fireMascotCue({ mood: "ok", msg: randomMsg, ms: 3000 });
+    }
+  }, [elapsed, finished]);
+
+  useEffect(() => {
     let mounted = true;
     (async () => {
       try {
@@ -206,6 +267,19 @@ export default function RoutinePlayer() {
           setElapsed(prev.elapsedSeconds);
           setIndex(Math.min(prev.currentIndex, Math.max(0, ex.length - 1)));
         }
+        
+        // Mensaje de inicio específico cuando se carga la rutina
+        if (mounted) {
+          const startMessages = [
+            "¡Es hora de brillar! 🌟 ¡Vamos con toda la energía!",
+            "¡Prepárate para dar lo mejor de ti! 💪 ¡Tú puedes!",
+            "¡Comencemos esta aventura juntos! 🚀 ¡Vamos!",
+            "¡Tu cuerpo te agradecerá este esfuerzo! 💚 ¡Adelante!",
+            "¡Cada paso cuenta! 🎯 ¡Iniciemos con todo!"
+          ];
+          const randomStart = startMessages[Math.floor(Math.random() * startMessages.length)];
+          fireMascotCue({ mood: "clap", msg: randomStart, ms: 4000 });
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -219,14 +293,14 @@ export default function RoutinePlayer() {
   }, [routineId]);
 
   // Timer global
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isRunning || finished) return;
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [isRunning, finished]);
 
   // Guardar progreso
-  React.useEffect(() => {
+  useEffect(() => {
     if (!Number.isFinite(routineId) || finished) return;
     const p: Progress = {
       routineId,
@@ -238,9 +312,9 @@ export default function RoutinePlayer() {
   }, [routineId, elapsed, index, finished]);
 
   // Teclado (space/arrow)
-  React.useEffect(() => {
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (finished) return; // no interacciones cuando ya finalizó
+      if (finished) return;
       if (e.key === " " || e.code === "Space") {
         e.preventDefault();
         setIsRunning((v) => !v);
@@ -252,7 +326,10 @@ export default function RoutinePlayer() {
     };
     keyHandlerRef.current = onKey;
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      keyHandlerRef.current = null;
+    };
   }, [exercises.length, finished]);
 
   const handlePrev = () => {
@@ -274,10 +351,13 @@ export default function RoutinePlayer() {
     // 1) Cortar interacciones y timer inmediatamente
     setIsRunning(false);
     setFinished(true);
-    // Quitar listener de teclado de inmediato
+    // Quitar listener de teclado de inmediato usando el ref
     if (keyHandlerRef.current) {
       window.removeEventListener("keydown", keyHandlerRef.current);
     }
+
+    // Mostrar mensaje de felicitación sin navegación automática
+    fireMascotCue({ mood: "clap", msg: "¡Rutina completada! 🎉 ¡Excelente trabajo!", ms: 4000 });
 
     // 2) Persistir en local
     const title = asStr((routine as Json)?.title) ?? "Rutina";
@@ -367,7 +447,7 @@ export default function RoutinePlayer() {
           {/* Contenido del ejercicio (key => asegura remontar el iframe al cambiar) */}
           <section className="mt-4 md:mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 md:p-6">
             {current ? (
-              <div key={current.id}>
+              <div key={`${index}-${current.id}`}>
                 <ExercisePlayer exercise={current} />
               </div>
             ) : (
