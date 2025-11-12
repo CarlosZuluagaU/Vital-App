@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { A11yButton } from "../../../components/a11y/A11yButton";
 import type { Profile } from "../../../context/Preferences";
+import { fireMascotCue } from "../../../components/pet/VitaAssistant";
 
 const OPTIONS = [
   {
@@ -24,6 +25,28 @@ export default function StepLevel({ value, onChange, onPrev, onNext }:{
   value: Profile; onChange:(p:Profile)=>void; onPrev:()=>void; onNext:()=>void;
 }) {
   const [level, setLevel] = useState<"BASICO"|"MODERADO"|"INTERMEDIO">(value.level ?? "BASICO");
+  const greetedRef = useRef(false);
+
+  // Mensaje inicial al entrar al step
+  useEffect(() => {
+    if (greetedRef.current) return;
+    greetedRef.current = true;
+    fireMascotCue({ mood: "ok", msg: "¿Cuál es tu nivel actual? 🎯 Elige el que mejor te describa.", ms: 3500 });
+  }, []);
+
+  // Mensaje dinámico cuando cambia el nivel seleccionado
+  useEffect(() => {
+    const messages = {
+      BASICO: "Perfecto para empezar 🌱 Vamos paso a paso, sin prisa.",
+      MODERADO: "¡Buen equilibrio! ⚖️ Desafíos justos para tu ritmo.",
+      INTERMEDIO: "¡Me gusta tu actitud! 💪 Estás listo para más."
+    };
+    
+    const message = messages[level];
+    if (message) {
+      fireMascotCue({ mood: "ok", msg: message, ms: 3000 });
+    }
+  }, [level]);
 
   return (
     <div>

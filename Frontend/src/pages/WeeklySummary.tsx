@@ -1,5 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { getLocalWeeklySummary } from "../utils/Weekly";
+import { fireMascotCue } from "../components/pet/VitaAssistant";
+import { useEffect, useRef } from "react";
 
 const fmtMin = (sec: number) => Math.floor(sec / 60);
 const weekdayShort = (iso: string) => {
@@ -15,6 +17,36 @@ export default function WeeklySummary() {
   const dailyGoalMin = 15;
   const weeklyGoalSec = dailyGoalMin * 60 * 7;
   const weeklyPct = Math.min(100, Math.round((totalSeconds / weeklyGoalSec) * 100));
+
+  const greetedRef = useRef(false);
+
+  useEffect(() => {
+    if (greetedRef.current) return;
+    greetedRef.current = true;
+
+    // Mensajes contextuales según el progreso
+    let message = "";
+    let mood: "ok" | "think" | "clap" = "ok";
+
+    if (weeklyPct >= 100) {
+      message = "¡Increíble! 🏆 ¡Cumpliste tu meta semanal! Eres imparable.";
+      mood = "clap";
+    } else if (weeklyPct >= 75) {
+      message = "¡Muy bien! 🌟 Estás muy cerca de tu meta, ¡sigue así!";
+      mood = "clap";
+    } else if (streakDays >= 3) {
+      message = `¡${streakDays} días seguidos! 🔥 ¡Tu constancia es admirable!`;
+      mood = "ok";
+    } else if (sessions > 0) {
+      message = "Vas bien 💪 Cada sesión cuenta, ¡no te rindas!";
+      mood = "ok";
+    } else {
+      message = "Aún no has empezado esta semana 🤔 ¡Nunca es tarde!";
+      mood = "think";
+    }
+
+    fireMascotCue({ mood, msg: message, ms: 4000 });
+  }, [weeklyPct, streakDays, sessions]);
 
   return (
     <main className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg px-4 py-6">

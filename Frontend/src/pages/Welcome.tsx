@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { fireMascotCue } from "../components/pet/VitaAssistant";
 import { A11yButton } from "../components/a11y/A11yButton";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 import { usePrefs } from "../context/Preferences";
@@ -11,6 +13,10 @@ export default function Welcome() {
     setProfile({ name: "Invitado", level: "BASICO" });
     nav("/", { replace: true });
   };
+
+  useEffect(() => {
+    fireMascotCue({ mood: "welcome", msg: "¡Hola! ¿Listo para moverte hoy? 🐾", ms: 4000 });
+  }, []);
 
   const abrirA11y = () => nav("/onboarding?step=2");
 

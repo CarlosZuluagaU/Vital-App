@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../../../context/Auth";
 import GoogleLoginButton from "../../../components/GoogleLoginButton";
 import { validatePassword, passwordsMatch, isValidEmail } from "../../../utils/validators";
+import { fireMascotCue } from "../../../components/pet/VitaAssistant";
 
 type Props = { onContinue: () => void; onGuest: () => void };
 
@@ -20,6 +21,14 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
   useEffect(() => {
     if (!loading && isAuthenticated) onContinue();
   }, [loading, isAuthenticated, onContinue]);
+
+  const greetedRef = React.useRef(false);
+
+  useEffect(() => {
+    if (greetedRef.current) return;
+    greetedRef.current = true;
+    fireMascotCue({ mood: "think", msg: "¿Te he visto antes? Si ya tienes cuenta, inicia sesión.", ms: 3800 });
+  }, []);
 
   const [mode, setMode] = useState<"login" | "register">("login");
 
@@ -77,6 +86,29 @@ const StepOAuth: React.FC<Props> = ({ onContinue, onGuest }) => {
       setSubmitting(false);
     }
   }
+
+  useEffect(() => {
+    if (mode === "login") {
+      // En login, probabilidad de mostrar un mensaje diferente
+      const showAlternative = Math.random() < 0.5; // 50% de probabilidad
+      
+      if (showAlternative) {
+        const alternativeMessages = [
+          "¿Te he visto antes? Me suena tu cara... 🤔",
+          "Mmm... ¿ya nos conocíamos? 🐾 No recuerdo bien...",
+          "Creo que te conozco de algún lado... 🧐",
+          "Tu cara me resulta familiar, pero no logro recordar... 🤨"
+        ];
+        const randomMsg = alternativeMessages[Math.floor(Math.random() * alternativeMessages.length)];
+        fireMascotCue({ mood: "think", msg: randomMsg, ms: 3500 });
+      } else {
+        fireMascotCue({ mood: "think", msg: "Bienvenido de nuevo. ¡A entrenar!", ms: 3200 });
+      }
+    } else {
+      // Registro
+      fireMascotCue({ mood: "ok", msg: "¿Usuario nuevo? ¡Bienvenido! ✨", ms: 3200 });
+    }
+  }, [mode]);
 
   return (
     <section className="w-full max-w-md">

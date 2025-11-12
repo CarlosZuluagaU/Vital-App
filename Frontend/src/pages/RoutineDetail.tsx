@@ -2,6 +2,7 @@ import React from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getRoutineById } from "../hooks/useApi";
 import type { RoutineDetailDTO } from "../types/InterfaceRoutines";
+import { fireMascotCue } from "../components/pet/VitaAssistant";
 
 type ExerciseRow = {
   id: number;
@@ -58,7 +59,22 @@ export default function RoutineDetail() {
         const numericId = id ? Number(id) : NaN;
         if (!Number.isFinite(numericId)) throw new Error("Id inválido");
         const d = await getRoutineById(numericId);
-        if (mounted) setData(d ?? null);
+        if (mounted) {
+          setData(d ?? null);
+          
+          // Mensaje de Vita sobre la rutina
+          if (d) {
+            const routineMessages = [
+              "¡Esta rutina se ve genial! 💪 ¿Listo para el desafío?",
+              "¡Excelente elección! 🌟 Vamos a darlo todo juntos.",
+              "Me gusta tu actitud 😊 ¡Esta rutina será increíble!",
+              "¡Hora de brillar! ✨ Esta rutina es perfecta para ti.",
+              "¡Qué emoción! 🎯 Veo que vienes con ganas de mejorar."
+            ];
+            const randomMsg = routineMessages[Math.floor(Math.random() * routineMessages.length)];
+            fireMascotCue({ mood: "clap", msg: randomMsg, ms: 3500 });
+          }
+        }
       } catch (e) {
         console.error(e);
         if (mounted) setData(null);

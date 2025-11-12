@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Alert } from '../components/Alert';
+import { fireMascotCue } from '../components/pet/VitaAssistant';
 
 /**
  * Cuestionario SUS (System Usability Scale)
@@ -101,6 +102,9 @@ export const SUSQuestionnaire: React.FC<SUSQuestionnaireProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [startTime] = useState(Date.now());
 
+  // NO mostrar mensaje de Vita al entrar, solo cuando se complete
+  // useEffect eliminado para evitar mensaje de bienvenida
+
   const handleResponseChange = (field: string, value: number) => {
     setResponses(prev => ({ ...prev, [field]: value }));
   };
@@ -158,33 +162,84 @@ export const SUSQuestionnaire: React.FC<SUSQuestionnaireProps> = ({
     setSessionDuration(duration);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/api/usability/sus', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          ...responses,
-          version,
-          environment,
-          sessionDurationMinutes: duration,
-          comments
-        })
-      });
+      // TODO: Reemplazar con llamada real al backend cuando el endpoint esté disponible
+      // const token = localStorage.getItem('token');
+      // const response = await fetch('http://localhost:8080/api/usability/sus', {
+      //   method: 'POST',
+      //   headers: {
+      //     'Content-Type': 'application/json',
+      //     'Authorization': `Bearer ${token}`
+      //   },
+      //   body: JSON.stringify({
+      //     ...responses,
+      //     version,
+      //     environment,
+      //     sessionDurationMinutes: duration,
+      //     comments
+      //   })
+      // });
+      // if (!response.ok) {
+      //   throw new Error('Error al enviar las respuestas');
+      // }
+      // const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error('Error al enviar las respuestas');
-      }
+      // SIMULACIÓN: Calcular el puntaje SUS localmente
+      await new Promise(resolve => setTimeout(resolve, 1500)); // Simular latencia de red
 
-      const data = await response.json();
+      // Preguntas impares (positivas): contribución = (respuesta - 1)
+      const oddSum = 
+        (responses.q1Frequency - 1) +
+        (responses.q3Ease - 1) +
+        (responses.q5Integration - 1) +
+        (responses.q7LearningSpeed - 1) +
+        (responses.q9Confidence - 1);
+
+      // Preguntas pares (negativas): contribución = (5 - respuesta)
+      const evenSum =
+        (5 - responses.q2Complexity) +
+        (5 - responses.q4SupportNeeded) +
+        (5 - responses.q6Inconsistency) +
+        (5 - responses.q8Cumbersome) +
+        (5 - responses.q10LearningDifficulty);
+
+      // Puntaje SUS = suma total * 2.5
+      const susScore = (oddSum + evenSum) * 2.5;
+      const meetsTarget = susScore >= 75;
+      
+      let scoreGrade = '';
+      if (susScore >= 85) scoreGrade = 'A - Excelente';
+      else if (susScore >= 75) scoreGrade = 'B - Bueno (Meta alcanzada)';
+      else if (susScore >= 70) scoreGrade = 'C - Aceptable';
+      else if (susScore >= 50) scoreGrade = 'D - Pobre';
+      else scoreGrade = 'F - Crítico';
+
+      const data = { susScore, scoreGrade, meetsTarget };
+      
+      console.log('📊 [SUS Simulado] Respuestas:', responses);
+      console.log('📊 [SUS Simulado] Puntaje:', susScore, '| Meta alcanzada:', meetsTarget);
+      console.log('📊 [SUS Simulado] Comentarios:', comments || 'Sin comentarios');
+      // FIN SIMULACIÓN
 
       setResult({
         score: data.susScore,
         grade: data.scoreGrade,
         meetsTarget: data.meetsTarget
       });
+
+      // Mensaje de Vita según el resultado
+      if (data.meetsTarget) {
+        fireMascotCue({ 
+          mood: "clap", 
+          msg: "¡Gracias por tu feedback! 🎉 Nos ayudas a ser mejores.", 
+          ms: 4000 
+        });
+      } else {
+        fireMascotCue({ 
+          mood: "think", 
+          msg: "Gracias por tu honestidad 🙏 Trabajaremos en mejorar.", 
+          ms: 4000 
+        });
+      }
 
       if (onComplete) {
         onComplete(data.susScore);
@@ -196,77 +251,88 @@ export const SUSQuestionnaire: React.FC<SUSQuestionnaireProps> = ({
     }
   };
 
-  const getScoreColor = (score: number): string => {
-    if (score >= 85) return 'text-green-600';
-    if (score >= 75) return 'text-blue-600';
-    if (score >= 70) return 'text-yellow-600';
-    if (score >= 50) return 'text-orange-600';
-    return 'text-red-600';
+  const getScoreInfo = (score: number): { emoji: string; message: string } => {
+    if (score >= 85) return { emoji: '🏆', message: '¡Increíble! Parece que la aplicación te resultó muy fácil de usar.' };
+    if (score >= 75) return { emoji: '✅', message: '¡Genial! Nos alegra que hayas tenido una buena experiencia.' };
+    if (score >= 70) return { emoji: '👍', message: 'Gracias por tu opinión. Trabajaremos en mejorar tu experiencia.' };
+    if (score >= 50) return { emoji: '🤔', message: 'Valoramos tu feedback. Hay áreas que podemos mejorar.' };
+    return { emoji: '💭', message: 'Gracias por tu sinceridad. Nos ayuda a identificar qué mejorar.' };
   };
 
   if (result) {
+    const scoreInfo = getScoreInfo(result.score);
     return (
-      <div className="max-w-2xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-        <div className="text-center">
-          <h2 className="text-3xl font-bold mb-4">Resultados SUS</h2>
-          
-          <div className={`text-6xl font-bold mb-2 ${getScoreColor(result.score)}`}>
-            {result.score.toFixed(1)}
-          </div>
-          
-          <p className="text-xl mb-2">{result.grade}</p>
-          
-          {result.meetsTarget ? (
-            <Alert type="success" message="¡Meta alcanzada! Puntaje SUS ≥75" />
-          ) : (
-            <Alert 
-              type="warning" 
-              message={`Meta no alcanzada. Se requiere ≥75 (actual: ${result.score.toFixed(1)})`} 
-            />
-          )}
+      <div className="max-w-2xl mx-auto px-4 py-6 md:px-6">
+        <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg p-6">
+          <div className="text-center">
+            <h2 className="text-3xl font-bold mb-4 text-[var(--fg)]">¡Gracias por tu tiempo!</h2>
+            
+            <div className="text-6xl mb-4">
+              {scoreInfo.emoji}
+            </div>
+            
+            <p className="text-xl mb-6 text-[var(--fg)]">{scoreInfo.message}</p>
+            
+            {result.meetsTarget ? (
+              <div className="bg-[var(--card-elevated)] border border-[var(--accent)] rounded-lg p-4 mb-6">
+                <p className="text-[var(--fg)] font-semibold">
+                  Tu opinión es muy valiosa para nosotros. Seguiremos trabajando para ofrecerte la mejor experiencia. 💚
+                </p>
+              </div>
+            ) : (
+              <div className="bg-[var(--card-elevated)] border border-[var(--border)] rounded-lg p-4 mb-6">
+                <p className="text-[var(--fg)]">
+                  Agradecemos tu honestidad. Tus comentarios nos ayudarán a mejorar la aplicación. 🙏
+                </p>
+              </div>
+            )}
 
-          <div className="mt-6 p-4 bg-gray-50 rounded">
-            <h3 className="font-semibold mb-2">Información de la prueba</h3>
-            <p>Versión: {version}</p>
-            <p>Ambiente: {environment}</p>
-            <p>Duración: {sessionDuration} minutos</p>
-          </div>
+            <div className="mt-6 p-4 bg-[var(--card-elevated)] border border-[var(--border)] rounded text-left">
+              <h3 className="font-semibold mb-2 text-[var(--fg)]">Información de la evaluación</h3>
+              <p className="text-[var(--fg-muted)] text-sm">Versión: {version}</p>
+              <p className="text-[var(--fg-muted)] text-sm">Ambiente: {environment}</p>
+              <p className="text-[var(--fg-muted)] text-sm">Duración: {sessionDuration} minutos</p>
+              {/* Puntaje guardado solo para logs internos, no mostrado al usuario */}
+              <p className="text-[var(--fg-muted)] text-xs mt-2 opacity-50">
+                Puntaje interno: {result.score.toFixed(1)} (solo para análisis del equipo)
+              </p>
+            </div>
 
-          <button
-            onClick={() => window.location.reload()}
-            className="mt-6 px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 min-h-[44px] transition-colors"
-            aria-label="Realizar otra evaluación"
-          >
-            Realizar otra evaluación
-          </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-6 px-6 py-3 bg-[var(--accent)] text-[var(--bg)] rounded-lg hover:opacity-90 focus:ring-4 focus:ring-[var(--accent)] min-h-[44px] transition-all font-semibold"
+              aria-label="Realizar otra evaluación"
+            >
+              Volver al inicio
+            </button>
+          </div>
         </div>
       </div>
     );
-  }
+  }  return (
+    <div className="max-w-4xl mx-auto px-4 py-6 md:px-6">
+      <div className="bg-[var(--card)] border border-[var(--border)] rounded-lg shadow-lg p-4 md:p-6">
+        <div className="mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold mb-2 text-[var(--fg)]">Cuestionario de Usabilidad (SUS)</h1>
+          <p className="text-[var(--fg-muted)]">
+            Por favor, lee cada afirmación y selecciona tu nivel de acuerdo.
+            Este cuestionario nos ayuda a mejorar la experiencia de usuario.
+          </p>
+          <p className="text-sm text-[var(--fg-muted)] mt-2">
+            Versión: {version} | Ambiente: {environment}
+          </p>
+        </div>
 
-  return (
-    <div className="max-w-4xl mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">Cuestionario de Usabilidad (SUS)</h1>
-        <p className="text-gray-600">
-          Por favor, lee cada afirmación y selecciona tu nivel de acuerdo.
-          Este cuestionario nos ayuda a mejorar la experiencia de usuario.
-        </p>
-        <p className="text-sm text-gray-500 mt-2">
-          Meta: Puntaje SUS ≥75 | Versión: {version} | Ambiente: {environment}
-        </p>
-      </div>
+        {error && <Alert type="error" message={error} />}
 
-      {error && <Alert type="error" message={error} />}
-
-      <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-6 md:space-y-8">
         {SUS_QUESTIONS.map((question, index) => (
           <div 
             key={question.id}
-            className="p-4 border rounded-lg bg-gray-50"
+            className="p-4 border border-[var(--border)] rounded-lg bg-[var(--card-elevated)]"
           >
             <label className="block mb-4">
-              <span className="text-lg font-semibold">
+              <span className="text-base md:text-lg font-semibold text-[var(--fg)]">
                 {index + 1}. {question.text}
               </span>
             </label>
@@ -274,38 +340,35 @@ export const SUSQuestionnaire: React.FC<SUSQuestionnaireProps> = ({
             <fieldset>
               <legend className="sr-only">{question.text}</legend>
               <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
-                {LIKERT_SCALE.map(option => (
-                  <label
-                    key={option.value}
-                    className={`
-                      flex flex-col items-center p-3 border-2 rounded cursor-pointer
-                      transition-all
-                      ${responses[question.field] === option.value 
-                        ? 'border-blue-600 bg-blue-50' 
-                        : 'border-gray-300 hover:border-gray-400'}
-                    `}
-                  >
-                    <input
-                      type="radio"
-                      name={question.field}
-                      value={option.value}
-                      checked={responses[question.field] === option.value}
-                      onChange={(e) => handleResponseChange(question.field, parseInt(e.target.value))}
-                      className="sr-only"
+                {LIKERT_SCALE.map(option => {
+                  const isSelected = responses[question.field] === option.value;
+                  return (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => handleResponseChange(question.field, option.value)}
+                      className={`
+                        flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer
+                        transition-all min-h-[80px] justify-center
+                        ${isSelected
+                          ? 'border-[var(--accent)] bg-[var(--card)] shadow-md' 
+                          : 'border-[var(--border)] hover:border-[var(--accent)] hover:bg-[var(--card)]'}
+                      `}
                       aria-label={`${question.text}: ${option.label}`}
-                      required
-                    />
-                    <span className="text-2xl font-bold mb-1">{option.value}</span>
-                    <span className="text-xs text-center">{option.label}</span>
-                  </label>
-                ))}
+                      aria-pressed={isSelected}
+                    >
+                      <span className="text-2xl font-bold mb-1 text-[var(--fg)]">{option.value}</span>
+                      <span className="text-xs text-center text-[var(--fg-muted)]">{option.label}</span>
+                    </button>
+                  );
+                })}
               </div>
             </fieldset>
           </div>
         ))}
 
-        <div className="p-4 border rounded-lg">
-          <label htmlFor="comments" className="block text-lg font-semibold mb-2">
+        <div className="p-4 border border-[var(--border)] rounded-lg bg-[var(--card-elevated)]">
+          <label htmlFor="comments" className="block text-base md:text-lg font-semibold mb-2 text-[var(--fg)]">
             Comentarios adicionales (opcional)
           </label>
           <textarea
@@ -313,14 +376,14 @@ export const SUSQuestionnaire: React.FC<SUSQuestionnaireProps> = ({
             value={comments}
             onChange={(e) => setComments(e.target.value)}
             rows={4}
-            className="w-full p-2 border rounded focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border border-[var(--border)] rounded-lg bg-[var(--bg)] text-[var(--fg)] focus:ring-2 focus:ring-[var(--accent)] focus:outline-none"
             placeholder="Comparte tus comentarios, sugerencias o experiencias..."
             aria-label="Comentarios adicionales sobre tu experiencia"
           />
         </div>
 
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-gray-600">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-sm text-[var(--fg-muted)]">
             Progreso: {Object.keys(responses).length} / {SUS_QUESTIONS.length} preguntas respondidas
           </p>
           
@@ -328,11 +391,11 @@ export const SUSQuestionnaire: React.FC<SUSQuestionnaireProps> = ({
             type="submit"
             disabled={!isComplete() || isSubmitting}
             className={`
-              px-8 py-3 rounded-lg font-semibold text-white
+              px-8 py-3 rounded-lg font-semibold
               ${isComplete() && !isSubmitting
-                ? 'bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 cursor-pointer'
-                : 'bg-gray-400 cursor-not-allowed'}
-              transition-colors
+                ? 'bg-[var(--accent)] text-[var(--bg)] hover:opacity-90 focus:ring-4 focus:ring-[var(--accent)] cursor-pointer'
+                : 'bg-[var(--border)] text-[var(--fg-muted)] cursor-not-allowed'}
+              transition-all
               min-w-[180px] min-h-[44px]
             `}
             aria-label="Enviar cuestionario de usabilidad"
@@ -341,6 +404,7 @@ export const SUSQuestionnaire: React.FC<SUSQuestionnaireProps> = ({
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 };

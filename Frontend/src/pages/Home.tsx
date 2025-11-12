@@ -1,20 +1,21 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import RoutineCard from "../components/RoutineCard";
 import { usePrefs } from "../context/Preferences";
 import { getRoutines } from "../hooks/useApi";
 import type { RoutineSummaryDTO } from "../types/InterfaceRoutines";
 import { useAuth } from "../context/Auth";
-import { A11yButton } from "../components/a11y/A11yButton"; // <-- usa tu botón accesible
+import { A11yButton } from "../components/a11y/A11yButton";
+import { fireMascotCue } from "../components/pet/VitaAssistant";
 
 export default function Home() {
   const nav = useNavigate();
   const { profile } = usePrefs();
   const { loading: authLoading, isAuthenticated } = useAuth();
 
-  const [loading, setLoading] = React.useState(true);
-  const [all, setAll] = React.useState<RoutineSummaryDTO[]>([]);
-  const [error, setError] = React.useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [all, setAll] = useState<RoutineSummaryDTO[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   const target =
     profile?.level === "BASICO" ? "Suave" :
@@ -22,7 +23,7 @@ export default function Home() {
     profile?.level === "INTERMEDIO" ? "Intermedio" :
     undefined;
 
-  React.useEffect(() => {
+  useEffect(() => {
     let mounted = true;
     const load = async () => {
       if (authLoading) return;
@@ -56,6 +57,17 @@ export default function Home() {
     load();
     return () => { mounted = false; };
   }, [authLoading, isAuthenticated, target]);
+
+  useEffect(() => {
+    if (loading) return;
+    if (recommended.length) {
+      fireMascotCue({ mood: "ok", msg: "Te preparé algunas rutinas a tu medida. ¡Échales un vistazo!", ms: 6000 });
+    } else if (all.length) {
+      fireMascotCue({ mood: "tips", msg: "Puedes filtrar por nivel si quieres.", ms: 5000 });
+    } else {
+      fireMascotCue({ mood: "sad", msg: "No encontré rutinas. ¿Probamos otro nivel?", ms: 4000 });
+    }
+  }, [loading]);
 
   const recommended = target ? all.filter(r => r.intensityName === target) : all;
   const others = target ? all.filter(r => r.intensityName !== target) : [];
