@@ -119,19 +119,29 @@ export default function VitaAssistant({
 
   return (
     <div
-      className={`fixed ${posClasses} z-50 flex flex-col items-end gap-2 max-w-[85vw] sm:max-w-[260px]`}
+      className={`fixed ${posClasses} z-50 flex flex-col items-end gap-3 max-w-[85vw] sm:max-w-[280px] animate-slideInRight`}
       role="status"
       aria-live="polite"
     >
-      <div className="bg-[var(--card)] border border-[var(--border)] rounded-xl px-3 py-2 shadow-md text-sm text-[var(--fg)]">
-        {text}
+      {/* Bocadillo de texto mejorado */}
+      <div className="relative bg-gradient-to-br from-[var(--card)] to-[var(--card-elevated)] border-2 border-[var(--accent)]/30 rounded-2xl px-4 py-3 shadow-2xl text-sm text-[var(--fg)] animate-scaleIn backdrop-blur-sm">
+        <div className="absolute inset-0 bg-[var(--accent)]/5 rounded-2xl blur-xl" />
+        <p className="relative z-10 font-medium leading-relaxed">{text}</p>
+        {/* Piquito del bocadillo */}
+        <div className="absolute -bottom-2 right-8 w-4 h-4 bg-[var(--card)] border-r-2 border-b-2 border-[var(--accent)]/30 transform rotate-45" />
       </div>
-      <img
-        src={imgSrc}
-        alt="Vita"
-        className="w-24 sm:w-28 drop-shadow-lg select-none pointer-events-none"
-        draggable={false}
-      />
+      
+      {/* Mascota con efectos */}
+      <div className="relative animate-bounce" style={{ animationDuration: '3s' }}>
+        <img
+          src={imgSrc}
+          alt="Vita"
+          className="w-28 sm:w-32 drop-shadow-2xl select-none pointer-events-none relative z-10 transition-transform duration-300 hover:scale-110"
+          draggable={false}
+        />
+        {/* Glow effect */}
+        <div className="absolute inset-0 bg-[var(--accent)]/20 rounded-full blur-2xl scale-75 animate-pulse" />
+      </div>
     </div>
   );
 }
