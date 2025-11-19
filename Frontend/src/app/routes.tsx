@@ -9,6 +9,7 @@ import WeeklySummary from "../pages/WeeklySummary";
 import RoutinePlayer from "../pages/RoutinePlayer";
 import SUSQuestionnaire from "../pages/SUSQuestionnaire";
 import OAuth2RedirectHandler from "../pages/OAuth2RedirectHandler";
+import EditProfile from "../pages/EditProfile";
 import { RequireProfile } from "../routes/guards/RequireProfile";
 
 export const router = createBrowserRouter([
@@ -25,6 +26,7 @@ export const router = createBrowserRouter([
           { path: "/rutinas/:id", element: <RoutineDetail /> },
           { path: "/rutinas/:id/ejecutar", element: <RoutinePlayer /> },
           { path: "/resumen", element: <WeeklySummary /> },
+          { path: "/perfil/editar", element: <EditProfile /> },
           { path: "/sus-questionnaire", element: <SUSQuestionnaire version="1.0" environment="staging" /> }
         ]
       }

@@ -56,6 +56,9 @@ public class UserEntity implements UserDetails {
     @Column(name = "provider_id")
     private String providerId;
     
+    @Column(name = "avatar_id")
+    private Integer avatarId = 1;
+    
     @Column(name = "is_enabled", nullable = false)
     private Boolean isEnabled = true;
     
@@ -209,6 +212,14 @@ public class UserEntity implements UserDetails {
     
     public void setProviderId(String providerId) {
         this.providerId = providerId;
+    }
+    
+    public Integer getAvatarId() {
+        return avatarId;
+    }
+    
+    public void setAvatarId(Integer avatarId) {
+        this.avatarId = avatarId;
     }
     
     public Boolean getIsEnabled() {

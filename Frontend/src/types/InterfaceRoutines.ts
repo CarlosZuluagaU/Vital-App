@@ -31,6 +31,7 @@ export interface UserDTO {
   age?: number;
   phone?: string;
   provider?: Provider;
+  avatarId?: number;
   createdAt?: string;
   subscription?: SubscriptionDTO;
   roles?: string[];

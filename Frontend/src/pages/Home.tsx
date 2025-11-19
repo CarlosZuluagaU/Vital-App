@@ -28,25 +28,12 @@ export default function Home() {
     const load = async () => {
       if (authLoading) return;
 
-      //Se modificado para permitir ver rutinas sin estar autenticado en invitado
-      //if (!isAuthenticated) { setAll([]); setLoading(false); return; }
       setLoading(true); setError(null);
       try {
-        const a = target ? await getRoutines({ intensity: target }) : await getRoutines();
+        // Siempre obtener todas las rutinas para mantener el filtro consistente
+        const b = await getRoutines();
         if (!mounted) return;
-        if (a?.length) {
-          if (target) {
-            const b = await getRoutines();
-            if (!mounted) return;
-            setAll(b ?? a);
-          } else {
-            setAll(a);
-          }
-        } else {
-          const b = await getRoutines();
-          if (!mounted) return;
-          setAll(b ?? []);
-        }
+        setAll(b ?? []);
       } catch (e: any) {
         setError(e?.message || "No se pudieron cargar las rutinas.");
         setAll([]);
@@ -56,7 +43,11 @@ export default function Home() {
     };
     load();
     return () => { mounted = false; };
-  }, [authLoading, isAuthenticated, target]);
+  }, [authLoading, isAuthenticated]);
+
+  // Calcular rutinas recomendadas y otras
+  const recommended = target ? all.filter(r => r.intensityName === target) : all;
+  const others = target ? all.filter(r => r.intensityName !== target) : [];
 
   useEffect(() => {
     if (loading) return;
@@ -67,10 +58,7 @@ export default function Home() {
     } else {
       fireMascotCue({ mood: "sad", msg: "No encontré rutinas. ¿Probamos otro nivel?", ms: 4000 });
     }
-  }, [loading]);
-
-  const recommended = target ? all.filter(r => r.intensityName === target) : all;
-  const others = target ? all.filter(r => r.intensityName !== target) : [];
+  }, [loading, recommended.length, all.length]);
 
   return (
     <main className="w-full min-h-screen relative">

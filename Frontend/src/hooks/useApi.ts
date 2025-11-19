@@ -429,3 +429,21 @@ export function estimateRoutineMinutes(r: MultiComponentRoutineDTO): number {
 export async function getWeeklySummary(): Promise<WeeklySummary> {
   return { totalMinutes: 0, sessions: 0 };
 }
+
+/** ---------- Perfil y Contraseña ---------- */
+export async function verifyPassword(password: string): Promise<boolean> {
+  try {
+    const res = await coreFetch<{ success: boolean }>("/api/auth/verify-password", "POST", { password });
+    return res.success;
+  } catch {
+    return false;
+  }
+}
+
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+  await coreFetch<void>("/api/auth/change-password", "PUT", { currentPassword, newPassword });
+}
+
+export async function updateProfile(name: string, avatarId: number): Promise<UserDTO> {
+  return coreFetch<UserDTO>("/api/auth/me", "PUT", { name, avatarId });
+}

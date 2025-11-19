@@ -54,10 +54,12 @@ export default function VitaAssistant({
   // Verificar si la ruta actual tiene mensaje personalizado
   const hasCustomMessage = useMemo(() => {
     const path = location.pathname.toLowerCase();
-    return path.includes("resumen") || 
-           path.includes("rutinas") || 
-           path.includes("onboarding") || 
-           path.includes("questionnaire");
+    // Excluir específicamente la ruta raíz
+    if (path === "/" || path === "/home") return false;
+    return path.includes("/resumen") || 
+           path.includes("/rutinas/") ||  // Solo con / para evitar match parcial
+           path.includes("/onboarding") || 
+           path.includes("/questionnaire");
   }, [location.pathname]);
 
   const [mood, setMood] = useState<keyof Reactions>("welcome");
@@ -80,11 +82,17 @@ export default function VitaAssistant({
     const path = location.pathname.toLowerCase();
     
     // Rutas que tienen su propio fireMascotCue específico - NO mostrar welcome default
+    // Excluir específicamente la ruta raíz
+    if (path === "/" || path === "/home") {
+      show("welcome");
+      return;
+    }
+    
     const hasCustomMessage = 
-      path.includes("resumen") ||  // WeeklySummary
-      path.includes("rutinas") ||  // RoutineDetail, RoutinePlayer
-      path.includes("onboarding") || // Steps de onboarding
-      path.includes("questionnaire"); // SUS Questionnaire
+      path.includes("/resumen") ||  // WeeklySummary
+      path.includes("/rutinas/") ||  // RoutineDetail, RoutinePlayer (con / para evitar match parcial)
+      path.includes("/onboarding") || // Steps de onboarding
+      path.includes("/questionnaire"); // SUS Questionnaire
     
     if (hasCustomMessage) return; // Las páginas con mensajes específicos manejan su propio cue
     

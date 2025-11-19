@@ -11,6 +11,7 @@ public class UserInfoDTO {
     private Integer age;
     private String phone;
     private String provider;
+    private Integer avatarId;
     private SubscriptionInfoDTO currentSubscription;
     private LocalDateTime createdAt;
     
@@ -79,6 +80,14 @@ public class UserInfoDTO {
     
     public void setProvider(String provider) {
         this.provider = provider;
+    }
+    
+    public Integer getAvatarId() {
+        return avatarId;
+    }
+    
+    public void setAvatarId(Integer avatarId) {
+        this.avatarId = avatarId;
     }
     
     public SubscriptionInfoDTO getCurrentSubscription() {

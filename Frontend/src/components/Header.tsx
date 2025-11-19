@@ -1,16 +1,27 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { usePrefs, type FontSize } from "../context/Preferences";
 import { useAuth } from "../context/Auth";
 import { A11yButton } from "./a11y/A11yButton";
+import { DEFAULT_AVATARS } from "./AvatarSelector";
 
 export default function Header() {
+  const nav = useNavigate();
   const { fontSize, setFontSize, highContrast, setHighContrast, profile, setProfile } = usePrefs();
   const { user, isAuthenticated, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
 
-  const name = (user as { name?: string; username?: string })?.name || (user as { name?: string; username?: string })?.username || "¡bienvenid@!";
-  const greeting = `Hola, ${name}`;
+  // Obtener nombre del perfil o usuario
+  const displayName = profile?.name || 
+                      (user as { name?: string; username?: string })?.name || 
+                      (user as { name?: string; username?: string })?.username || 
+                      "¡bienvenid@!";
+  const greeting = `Hola, ${displayName}`;
+
+  // Obtener avatar del perfil
+  const getAvatarImage = (id: number) => {
+    return DEFAULT_AVATARS.find((a) => a.id === id)?.image || "/images/Default.png";
+  };
 
   // Mensajes motivadores aleatorios
   const motivationalMessages = [
@@ -63,18 +74,38 @@ export default function Header() {
               </div>
             </div>
 
-            {/* Botón hamburguesa con efectos mejorados */}
-            <button
-              onClick={() => setMenuOpen(!menuOpen)}
-              className="relative flex flex-col justify-center items-center w-12 h-12 rounded-xl hover:bg-[var(--accent)]/10 hover:scale-110 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] group"
-              aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
-              aria-expanded={menuOpen}
-            >
-              <span className="absolute inset-0 bg-[var(--accent)]/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
-              <span className={`relative z-10 w-6 h-0.5 bg-[var(--accent)] transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
-              <span className={`relative z-10 w-6 h-0.5 bg-[var(--accent)] my-1 transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
-              <span className={`relative z-10 w-6 h-0.5 bg-[var(--accent)] transition-all duration-300 ${menuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
-            </button>
+            {/* Avatar del usuario + Botón hamburguesa - Agrupados a la derecha */}
+            <div className="flex items-center gap-1">
+              {/* Avatar del usuario - Click para editar perfil - Solo si tiene perfil */}
+              {profile && (
+                <button
+                  onClick={() => nav("/perfil/editar")}
+                  className="relative w-12 h-12 rounded-full bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent)]/10 border-2 border-[var(--accent)]/30 flex items-center justify-center hover:scale-110 hover:shadow-lg hover:border-[var(--accent)]/60 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] group overflow-hidden"
+                  aria-label="Editar perfil"
+                  title="Editar perfil"
+                >
+                  <span className="absolute inset-0 bg-[var(--accent)]/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-full" />
+                  <img 
+                    src={getAvatarImage(profile?.avatarId || 1)}
+                    alt="Avatar"
+                    className="w-10 h-10 object-contain relative z-10"
+                  />
+                </button>
+              )}
+
+              {/* Botón hamburguesa con efectos mejorados */}
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className="relative flex flex-col justify-center items-center w-12 h-12 rounded-xl hover:bg-[var(--accent)]/10 hover:scale-110 transition-all duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] group"
+                aria-label={menuOpen ? "Cerrar menú" : "Abrir menú"}
+                aria-expanded={menuOpen}
+              >
+                <span className="absolute inset-0 bg-[var(--accent)]/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl" />
+                <span className={`relative z-10 w-6 h-0.5 bg-[var(--accent)] transition-all duration-300 ${menuOpen ? 'rotate-45 translate-y-1.5' : ''}`} />
+                <span className={`relative z-10 w-6 h-0.5 bg-[var(--accent)] my-1 transition-all duration-300 ${menuOpen ? 'opacity-0' : ''}`} />
+                <span className={`relative z-10 w-6 h-0.5 bg-[var(--accent)] transition-all duration-300 ${menuOpen ? '-rotate-45 -translate-y-1.5' : ''}`} />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -208,6 +239,18 @@ export default function Header() {
 
           {/* Footer del sidebar con gradiente */}
           <div className="p-4 border-t-2 border-[var(--accent)]/20 bg-gradient-to-t from-[var(--card-elevated)] to-transparent space-y-2 animate-slideInRight" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+            {/* Botón Editar Perfil */}
+            <A11yButton 
+              variant="secondary" 
+              onClick={() => {
+                setMenuOpen(false);
+                nav("/perfil/editar");
+              }}
+              className="w-full transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[var(--accent)]/30 flex items-center justify-center gap-2"
+            >
+              <span>👤</span> Editar Perfil
+            </A11yButton>
+
             {isAuthenticated ? (
               <A11yButton 
                 variant="primary" 

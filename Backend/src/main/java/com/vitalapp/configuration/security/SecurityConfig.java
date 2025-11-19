@@ -24,7 +24,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.vitalapp.service.implementation.CustomOAuth2UserService;
 import com.vitalapp.service.implementation.CustomUserDetailsService;
 import com.vitalapp.service.implementation.SubscriptionAccessEvaluator;
+import com.vitalapp.util.ApiAuthenticationFilter;
 import com.vitalapp.util.JwtAuthenticationFilter;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 @Configuration
 @EnableWebSecurity
@@ -39,6 +42,9 @@ public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+    
+    @Autowired
+    private ApiAuthenticationFilter apiAuthenticationFilter;
 
     @Autowired
     private CustomOAuth2UserService customOAuth2UserService;
@@ -71,7 +77,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
                         // Endpoints públicos (autenticación, etc.)
-                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh").permitAll()
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         
@@ -82,15 +88,12 @@ public class SecurityConfig {
                         .requestMatchers("/h2-console/**").permitAll() // Considerar @Profile("dev")
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**", "/webjars/**").permitAll() // Considerar @Profile("dev")
 
-                        // Endpoints públicos para pruebas (temporalmente)
-                        //.requestMatchers("/api/exercises/**", "/api/routines/**").permitAll()
-
-                        // Endpoints públicos (acceso libre)
-                        .requestMatchers("/api/exercises/").permitAll()          // Todos los ejercicios (básicos y premium)
-                        .requestMatchers("/api/routines/").permitAll()           // Todas las rutinas
-                        .requestMatchers("/api/categories/").permitAll()         // Categorías
-                        .requestMatchers("/api/intensities/").permitAll()        // Intensidades
-                        .requestMatchers("/api/exercise-types/**").permitAll()
+                        // Endpoints públicos para modo invitado (acceso sin autenticación)
+                        .requestMatchers("/api/exercises/**").permitAll()        // Todos los ejercicios
+                        .requestMatchers("/api/routines/**").permitAll()         // Todas las rutinas
+                        .requestMatchers("/api/categories/**").permitAll()       // Categorías
+                        .requestMatchers("/api/intensities/**").permitAll()      // Intensidades
+                        .requestMatchers("/api/exercise-types/**").permitAll()   // Tipos de ejercicios
                         
                         // Endpoints que requieren plan básico o superior
                         .requestMatchers("/api/me/activities/**").hasRole("USER")
@@ -102,18 +105,37 @@ public class SecurityConfig {
                         // Todos los demás endpoints requieren autenticación
                         .anyRequest().authenticated()
                 )
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            // Si es una petición de API, devolver 401 JSON sin redirigir
+                            String uri = request.getRequestURI();
+                            if (uri.startsWith("/api/")) {
+                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                response.setContentType("application/json");
+                                response.setCharacterEncoding("UTF-8");
+                                response.getWriter().write("{\"error\":\"No autenticado\",\"message\":\"Se requiere autenticación válida\"}");
+                                response.getWriter().flush();
+                            } else {
+                                // Para otras rutas (no API), redirigir a OAuth2
+                                response.sendRedirect("/oauth2/authorization/google");
+                            }
+                        })
+                )
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/oauth2/authorization/google")  // Deshabilita página de login por defecto
-                        .defaultSuccessUrl("http://localhost:5173/oauth2/redirect", true)  // URL por defecto después de login exitoso
+                        .loginPage("/oauth2/authorization/google")
+                        .defaultSuccessUrl("http://localhost:5173/oauth2/redirect", true)
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)
                         )
                         .successHandler(oAuth2AuthenticationSuccessHandler)
+                        // Importante: deshabilitar redirección automática para fallos
+                        .failureUrl("http://localhost:5173/welcome?error=oauth")
                 )
                 .formLogin(form -> form.disable()) // Deshabilitar formulario de login por defecto
                 .httpBasic(basic -> basic.disable()) // Deshabilitar HTTP Basic
                 .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(apiAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(jwtAuthenticationFilter, ApiAuthenticationFilter.class);
 
         // Necesario para que el frame de la H2 Console funcione
         http.headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()));
@@ -125,12 +147,13 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Temporalmente permitir todos los orígenes para pruebas
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // Especificar origen exacto en lugar de * porque usamos allowCredentials
+        configuration.setAllowedOrigins(Arrays.asList("http://localhost:5173"));
 
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
-        configuration.setAllowCredentials(true); // Permitir credenciales es importante para JWT en cookies o headers
+        configuration.setAllowedHeaders(Arrays.asList("*")); // Permitir todos los headers
+        configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(Arrays.asList("Authorization")); // Exponer header Authorization
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
