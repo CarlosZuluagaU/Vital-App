@@ -70,10 +70,14 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authz -> authz
-                        // Endpoints públicos (autenticación, etc.)
-                        .requestMatchers("/api/auth/**").permitAll()
+                        // Endpoints públicos (autenticación - login, register, etc.)
+                        .requestMatchers("/api/auth/login", "/api/auth/register").permitAll()
+                        .requestMatchers("/api/auth/check-username/**", "/api/auth/check-email/**").permitAll()
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        
+                        // Endpoint protegido - requiere autenticación
+                        .requestMatchers("/api/auth/me").authenticated()
                         
                         // OAuth2 endpoints
                         .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
@@ -125,12 +129,25 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
 
-        // Temporalmente permitir todos los orígenes para pruebas
-        configuration.setAllowedOriginPatterns(Arrays.asList("*"));
+        // Orígenes permitidos (no usar "*" con allowCredentials=true)
+        configuration.setAllowedOrigins(Arrays.asList(
+            "http://localhost:5173",
+            "http://localhost:5174",
+            "http://localhost:3000",
+            "http://localhost:8080"
+        ));
 
-        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With"));
-        configuration.setAllowCredentials(true); // Permitir credenciales es importante para JWT en cookies o headers
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        configuration.setAllowedHeaders(Arrays.asList(
+            "Authorization",
+            "Content-Type",
+            "Accept",
+            "Origin",
+            "X-Requested-With"
+        ));
+        configuration.setExposedHeaders(Arrays.asList("Authorization", "Content-Type"));
+        configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

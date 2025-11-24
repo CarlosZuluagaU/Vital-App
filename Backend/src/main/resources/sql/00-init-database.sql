@@ -179,6 +179,21 @@ CREATE TABLE IF NOT EXISTS user_subscriptions (
     INDEX idx_status (status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Tabla: user_activity_log (registro de progreso)
+CREATE TABLE IF NOT EXISTS user_activity_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    activity_type VARCHAR(50) NOT NULL,
+    related_entity_id BIGINT NOT NULL,
+    duration_seconds INT NOT NULL,
+    exercise_count INT NOT NULL,
+    completed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    activity_date DATE NOT NULL DEFAULT (CURRENT_DATE),
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_user_completed_at (user_id, completed_at),
+    INDEX idx_user_activity_date (user_id, activity_date)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Tabla: activity_logs
 CREATE TABLE IF NOT EXISTS activity_logs (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

@@ -11,6 +11,7 @@ import type {
   MultiComponentRoutineDTO,
   ActivityLogRequestDTO,
   ActivityLogConfirmationDTO,
+  WeeklyStatsDTO,
   CategoryDTO,
   IntensityDTO,
   ExerciseTypeDTO,
@@ -379,6 +380,12 @@ export async function getMultiByAgeGroup(ageGroup: string): Promise<MultiCompone
 export async function postActivity(body: ActivityLogRequestDTO): Promise<ActivityLogConfirmationDTO> {
   // En doc técnica: POST /api/me/activities retorna { status, message, newAchievements }  :contentReference[oaicite:4]{index=4}
   return coreFetch<ActivityLogConfirmationDTO>(`/api/me/activities`, "POST", body);
+}
+
+export async function getWeeklyActivityStats(params?: { start?: string; days?: number }): Promise<WeeklyStatsDTO> {
+  const q = asQuery({ start: param(params?.start), days: param(params?.days) });
+  const qs = q ? `?${q}` : "";
+  return coreFetch<WeeklyStatsDTO>(`/api/me/activities/stats${qs}`, "GET");
 }
 
 // ---------- Catálogos y Users (según guía de endpoints de prueba) ----------

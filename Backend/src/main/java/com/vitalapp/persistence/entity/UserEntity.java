@@ -49,6 +49,30 @@ public class UserEntity implements UserDetails {
     @Column(name = "phone", length = 20)
     private String phone;
     
+    @Column(name = "profile_picture", length = 500)
+    private String profilePicture;
+    
+    @Column(name = "fitness_level", length = 50)
+    private String fitnessLevel;
+    
+    @Column(name = "preferred_location", length = 100)
+    private String preferredLocation;
+    
+    @Column(name = "date_of_birth")
+    private String dateOfBirth;
+    
+    @Column(name = "height")
+    private Double height;
+    
+    @Column(name = "weight")
+    private Double weight;
+    
+    @Column(name = "health_conditions", columnDefinition = "TEXT")
+    private String healthConditions;
+    
+    @Column(name = "fitness_goals", length = 100)
+    private String fitnessGoals;
+    
     @Enumerated(EnumType.STRING)
     @Column(name = "provider", nullable = false)
     private AuthProvider provider = AuthProvider.LOCAL;
@@ -265,6 +289,70 @@ public class UserEntity implements UserDetails {
     
     public void setSubscriptions(List<UserSubscriptionEntity> subscriptions) {
         this.subscriptions = subscriptions;
+    }
+    
+    public String getProfilePicture() {
+        return profilePicture;
+    }
+    
+    public void setProfilePicture(String profilePicture) {
+        this.profilePicture = profilePicture;
+    }
+    
+    public String getFitnessLevel() {
+        return fitnessLevel;
+    }
+    
+    public void setFitnessLevel(String fitnessLevel) {
+        this.fitnessLevel = fitnessLevel;
+    }
+    
+    public String getPreferredLocation() {
+        return preferredLocation;
+    }
+    
+    public void setPreferredLocation(String preferredLocation) {
+        this.preferredLocation = preferredLocation;
+    }
+    
+    public String getDateOfBirth() {
+        return dateOfBirth;
+    }
+    
+    public void setDateOfBirth(String dateOfBirth) {
+        this.dateOfBirth = dateOfBirth;
+    }
+    
+    public Double getHeight() {
+        return height;
+    }
+    
+    public void setHeight(Double height) {
+        this.height = height;
+    }
+    
+    public Double getWeight() {
+        return weight;
+    }
+    
+    public void setWeight(Double weight) {
+        this.weight = weight;
+    }
+    
+    public String getHealthConditions() {
+        return healthConditions;
+    }
+    
+    public void setHealthConditions(String healthConditions) {
+        this.healthConditions = healthConditions;
+    }
+    
+    public String getFitnessGoals() {
+        return fitnessGoals;
+    }
+    
+    public void setFitnessGoals(String fitnessGoals) {
+        this.fitnessGoals = fitnessGoals;
     }
     
     // Enum for authentication providers

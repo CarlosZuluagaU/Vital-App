@@ -1,5 +1,6 @@
 package com.vitalapp.persistence.entity;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Column;
@@ -34,21 +35,39 @@ public class UserActivityLogEntity {
     @Column(name = "related_entity_id", nullable = false)
     private Long relatedEntityId;
     
+    @Column(name = "duration_seconds", nullable = false)
+    private Integer durationSeconds;
+    
+    @Column(name = "exercise_count", nullable = false)
+    private Integer exerciseCount;
+    
     @Column(name = "completed_at", nullable = false)
     private LocalDateTime completedAt;
+
+    @Column(name = "activity_date", nullable = false)
+    private LocalDate activityDate;
     
     @PrePersist
     protected void onCreate() {
         completedAt = LocalDateTime.now();
+        if (activityDate == null) {
+            activityDate = completedAt.toLocalDate();
+        }
     }
     
     // Constructors
     public UserActivityLogEntity() {}
     
-    public UserActivityLogEntity(UserEntity user, ActivityType activityType, Long relatedEntityId) {
+    public UserActivityLogEntity(UserEntity user,
+                                ActivityType activityType,
+                                Long relatedEntityId,
+                                Integer durationSeconds,
+                                Integer exerciseCount) {
         this.user = user;
         this.activityType = activityType;
         this.relatedEntityId = relatedEntityId;
+        this.durationSeconds = durationSeconds;
+        this.exerciseCount = exerciseCount;
     }
     
     // Getters and Setters
@@ -84,12 +103,36 @@ public class UserActivityLogEntity {
         this.relatedEntityId = relatedEntityId;
     }
     
+    public Integer getDurationSeconds() {
+        return durationSeconds;
+    }
+    
+    public void setDurationSeconds(Integer durationSeconds) {
+        this.durationSeconds = durationSeconds;
+    }
+    
+    public Integer getExerciseCount() {
+        return exerciseCount;
+    }
+    
+    public void setExerciseCount(Integer exerciseCount) {
+        this.exerciseCount = exerciseCount;
+    }
+    
     public LocalDateTime getCompletedAt() {
         return completedAt;
     }
-    
+
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public LocalDate getActivityDate() {
+        return activityDate;
+    }
+
+    public void setActivityDate(LocalDate activityDate) {
+        this.activityDate = activityDate;
     }
     
     // Enum for activity types

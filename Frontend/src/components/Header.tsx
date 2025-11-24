@@ -63,6 +63,35 @@ export default function Header() {
               </div>
             </div>
 
+            {/* Botón de configuración accesible con diseño mejorado */}
+            {isAuthenticated && (
+              <div className="hidden md:flex items-center gap-2">
+                <Link
+                  to="/configuracion"
+                  className="group relative flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-[var(--accent)]/10 to-[var(--accent)]/20 border-2 border-[var(--accent)]/30 hover:border-[var(--accent)]/60 backdrop-blur-sm transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-[var(--accent)]/25 focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] overflow-hidden"
+                  aria-label="Editar perfil"
+                >
+                  <div className="absolute inset-0 bg-gradient-to-r from-[var(--accent)]/0 via-[var(--accent)]/10 to-[var(--accent)]/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 animate-pulse" />
+                  <div className="relative z-10 flex items-center gap-2">
+                    <div className="relative">
+                      <span className="text-lg group-hover:rotate-12 group-hover:scale-110 transition-transform duration-300 drop-shadow-sm">⚙️</span>
+                      <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--accent)] rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ping" />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-bold text-[var(--accent)] group-hover:text-[var(--accent)] transition-colors duration-300">
+                        Editar Perfil
+                      </span>
+                      <span className="text-xs text-[var(--fg-muted)] group-hover:text-[var(--accent)]/80 transition-colors duration-300">
+                        Personalizar
+                      </span>
+                    </div>
+                    <div className="w-1.5 h-1.5 bg-[var(--accent)] rounded-full opacity-60 group-hover:opacity-100 group-hover:scale-150 transition-all duration-300" />
+                  </div>
+                  <div className="absolute top-0 left-0 w-0 h-full bg-gradient-to-r from-transparent to-[var(--accent)]/20 group-hover:w-full transition-all duration-500 ease-out" />
+                </Link>
+              </div>
+            )}
+
             {/* Botón hamburguesa con efectos mejorados */}
             <button
               onClick={() => setMenuOpen(!menuOpen)}
@@ -208,6 +237,7 @@ export default function Header() {
 
           {/* Footer del sidebar con gradiente */}
           <div className="p-4 border-t-2 border-[var(--accent)]/20 bg-gradient-to-t from-[var(--card-elevated)] to-transparent space-y-2 animate-slideInRight" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
+
             {isAuthenticated ? (
               <A11yButton 
                 variant="primary" 

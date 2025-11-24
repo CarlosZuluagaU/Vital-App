@@ -4,14 +4,44 @@ import { A11yButton } from "../components/a11y/A11yButton";
 import GoogleLoginButton from "../components/GoogleLoginButton";
 import { usePrefs } from "../context/Preferences";
 import { useNavigate } from "react-router-dom";
+import { setAuthToken } from "../hooks/useApi";
+import { useAuth } from "../context/Auth";
 
 export default function Welcome() {
   const nav = useNavigate();
   const { setProfile } = usePrefs();
+  const { refreshMe } = useAuth();
 
   const continuarInvitado = () => {
     setProfile({ name: "Invitado", level: "BASICO" });
     nav("/", { replace: true });
+  };
+
+  // Función temporal para desarrollo - simular login
+  const loginDesarrollo = async () => {
+    try {
+      // Simular token JWT (en un entorno real, esto vendría del backend)
+      const fakeToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c3VhcmlvQGV4YW1wbGUuY29tIiwiaWF0IjoxNjk5OTcwNDAwLCJleHAiOjE3MDA1NzUyMDB9.fake-development-token";
+      
+      // Guardar token
+      setAuthToken(fakeToken);
+      
+      // Simular datos de usuario
+      localStorage.setItem('dev:user', JSON.stringify({
+        id: 1,
+        name: "Usuario de Prueba",
+        email: "usuario@example.com",
+        profilePicture: null,
+        fitnessLevel: "INTERMEDIATE",
+        preferredLocation: "HOME"
+      }));
+      
+      await refreshMe();
+      nav("/configuracion", { replace: true });
+    } catch (error) {
+      console.error("Error en login de desarrollo:", error);
+      alert("Error al hacer login de desarrollo");
+    }
   };
 
   useEffect(() => {
@@ -84,6 +114,18 @@ export default function Welcome() {
             <span className="flex items-center justify-center gap-2">
               <span>👤</span>
               <span>Continuar como Invitado</span>
+            </span>
+          </button>
+
+          {/* Botón temporal para desarrollo */}
+          <button
+            onClick={loginDesarrollo}
+            className="w-full mt-3 rounded-xl px-4 py-3 min-h-[44px] border-2 border-orange-500/50 bg-orange-500/10 text-orange-600 hover:border-orange-500 hover:bg-orange-500/20 transform hover:scale-105 transition-all duration-300 focus-visible:outline focus-visible:ring-2 focus-visible:ring-orange-500 shadow-md hover:shadow-lg animate-slideInUp"
+            style={{ animationDelay: '0.55s', animationFillMode: 'backwards' }}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <span>🔧</span>
+              <span className="text-sm font-semibold">Login de Desarrollo</span>
             </span>
           </button>
         </div>

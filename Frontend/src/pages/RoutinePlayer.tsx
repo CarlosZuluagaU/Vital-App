@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getRoutineById } from "../hooks/useApi";
+import { getRoutineById, postActivity } from "../hooks/useApi";
 import ExercisePlayer, { type ExerciseMini } from "../components/ExercisePlayer";
 import { fireMascotCue } from "../components/pet/VitaAssistant";
 
@@ -355,7 +355,7 @@ export default function RoutinePlayer() {
 
   const handleNext = () => setIndex((i) => Math.min(exercises.length - 1, i + 1));
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     // 1) Cortar interacciones y timer inmediatamente
     setIsRunning(false);
     setFinished(true);
@@ -380,9 +380,75 @@ export default function RoutinePlayer() {
     appendToDayBucket(session);
     clearProgress(routineId);
 
-    // 3) (Gancho a back) — no bloquea navegación
-    // TODO: cuando habiliten endpoint, mandar al servidor aquí.
-    console.debug("[finish] sesión guardada localmente", session);
+    // 3) Enviar al backend para actualizaciones en tiempo real
+    try {
+      console.log('[RoutinePlayer] Enviando actividad al backend...', {
+        routineId,
+        durationSeconds: Math.max(elapsed, 1),
+        exerciseCount: exercises.length,
+        activityDate: toLocalISODate(Date.now()),
+      });
+      
+      const response = await postActivity({
+        activityType: "ROUTINE_COMPLETED",
+        relatedEntityId: routineId,
+        durationSeconds: Math.max(elapsed, 1),
+        exerciseCount: exercises.length,
+        activityDate: toLocalISODate(Date.now()),
+      });
+      
+      console.log('[RoutinePlayer] Respuesta del backend:', response);
+
+      if (response.status === 'success') {
+        // Disparar evento solo si el backend confirmó
+        window.dispatchEvent(
+          new CustomEvent("routineCompleted", {
+            detail: {
+              routineName: title,
+              date: new Date().toISOString().split("T")[0],
+              routine: { id: routineId, title, exercises: exercises.length },
+              duration: elapsed,
+              timestamp: Date.now(),
+              backendConfirmed: true,
+            },
+          })
+        );
+        console.log('[RoutinePlayer] Evento routineCompleted disparado');
+      } else {
+        console.warn('[RoutinePlayer] Backend respondió con error:', response.message);
+        // Disparar evento igualmente pero marcar como no confirmado
+        window.dispatchEvent(
+          new CustomEvent("routineCompleted", {
+            detail: {
+              routineName: title,
+              date: new Date().toISOString().split("T")[0],
+              routine: { id: routineId, title, exercises: exercises.length },
+              duration: elapsed,
+              timestamp: Date.now(),
+              backendConfirmed: false,
+            },
+          })
+        );
+      }
+    } catch (error) {
+      console.error("[RoutinePlayer] Error conectando con el backend para registrar rutina:", error);
+      // Disparar evento de todas formas para actualizar UI local
+      window.dispatchEvent(
+        new CustomEvent("routineCompleted", {
+          detail: {
+            routineName: title,
+            date: new Date().toISOString().split("T")[0],
+            routine: { id: routineId, title, exercises: exercises.length },
+            duration: elapsed,
+            timestamp: Date.now(),
+            backendConfirmed: false,
+            error: true,
+          },
+        })
+      );
+    }
+
+    console.debug("[finish] sesión guardada localmente y enviada al backend", session);
   };
 
   const fmt = (s: number) => {
