@@ -40,10 +40,11 @@ export default function Header() {
 
   const handleLogout = async () => {
     try {
+      setProfile(null); // Limpiar perfil primero
       await logout?.();
     } finally {
-      setProfile(null);
-      location.href = "/welcome";
+      // Usar navigate en lugar de location.href para evitar recarga de página
+      nav("/welcome", { replace: true });
     }
   };
 

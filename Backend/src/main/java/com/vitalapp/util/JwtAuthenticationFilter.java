@@ -35,7 +35,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (StringUtils.hasText(jwt) && tokenProvider.validateToken(jwt)) {
                 Long userId = tokenProvider.getUserIdFromJWT(jwt);
+                System.out.println("[JwtAuthenticationFilter] Extracted userId from JWT: " + userId);
+                
                 UserDetails userDetails = userDetailsService.loadUserById(userId);
+                com.vitalapp.persistence.entity.UserEntity userEntity = (com.vitalapp.persistence.entity.UserEntity)userDetails;
+                System.out.println("[JwtAuthenticationFilter] Loaded user from DB: id=" + userEntity.getId() + ", username=" + userEntity.getUsername());
                 
                 UsernamePasswordAuthenticationToken authentication = 
                     new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());

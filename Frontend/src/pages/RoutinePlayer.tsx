@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getRoutineById } from "../hooks/useApi";
+import { getRoutineById, logActivity, getAuthToken } from "../hooks/useApi";
 import ExercisePlayer, { type ExerciseMini } from "../components/ExercisePlayer";
 import { fireMascotCue } from "../components/pet/VitaAssistant";
 
@@ -355,7 +355,7 @@ export default function RoutinePlayer() {
 
   const handleNext = () => setIndex((i) => Math.min(exercises.length - 1, i + 1));
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     // 1) Cortar interacciones y timer inmediatamente
     setIsRunning(false);
     setFinished(true);
@@ -380,9 +380,21 @@ export default function RoutinePlayer() {
     appendToDayBucket(session);
     clearProgress(routineId);
 
-    // 3) (Gancho a back) — no bloquea navegación
-    // TODO: cuando habiliten endpoint, mandar al servidor aquí.
-    console.debug("[finish] sesión guardada localmente", session);
+    // 3) Guardar en el backend (si está autenticado)
+    const token = getAuthToken();
+    if (token) {
+      try {
+        // Convertir segundos a minutos (redondeado)
+        const actualMinutes = Math.round(elapsed / 60);
+        await logActivity("ROUTINE_COMPLETED", routineId, actualMinutes);
+        console.debug("[finish] actividad guardada en backend", { routineId, actualMinutes });
+      } catch (error) {
+        console.error("[finish] error al guardar en backend:", error);
+        // No bloqueamos la UI si falla el backend
+      }
+    } else {
+      console.debug("[finish] modo invitado - solo guardado local");
+    }
   };
 
   const fmt = (s: number) => {

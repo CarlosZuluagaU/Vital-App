@@ -11,6 +11,7 @@ import type {
   MultiComponentRoutineDTO,
   ActivityLogRequestDTO,
   ActivityLogConfirmationDTO,
+  WeeklyStatsDTO,
   CategoryDTO,
   IntensityDTO,
   ExerciseTypeDTO,
@@ -59,8 +60,11 @@ const TOKEN_KEY = "auth:token";
 const REFRESH_KEY = "auth:refresh";
 
 export function setAuthToken(token: string | null) {
+  console.log('[setAuthToken] Setting token:', token ? `${token.substring(0, 20)}...` : 'NULL');
+  console.log('[setAuthToken] Key used:', TOKEN_KEY);
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
+  console.log('[setAuthToken] Verification:', localStorage.getItem(TOKEN_KEY) ? 'Token saved successfully' : 'Token removed or save failed');
 }
 export function getAuthToken() { return localStorage.getItem(TOKEN_KEY); }
 
@@ -274,6 +278,9 @@ export async function getMe(): Promise<UserDTO> {
 export function logout() {
   setAuthToken(null);
   setRefreshToken(null);
+  // Limpiar datos locales de progreso para evitar mezcla entre usuarios
+  localStorage.removeItem('sessions');
+  localStorage.removeItem('dayBuckets');
 }
 
 // OAuth2 starters (redirigen al backend)
@@ -379,6 +386,21 @@ export async function getMultiByAgeGroup(ageGroup: string): Promise<MultiCompone
 export async function postActivity(body: ActivityLogRequestDTO): Promise<ActivityLogConfirmationDTO> {
   // En doc técnica: POST /api/me/activities retorna { status, message, newAchievements }  :contentReference[oaicite:4]{index=4}
   return coreFetch<ActivityLogConfirmationDTO>(`/api/me/activities`, "POST", body);
+}
+
+export async function getWeeklyActivityStats(params?: { start?: string; days?: number }): Promise<WeeklyStatsDTO> {
+  const q = asQuery({ start: param(params?.start), days: param(params?.days) });
+  const qs = q ? `?${q}` : "";
+  return coreFetch<WeeklyStatsDTO>(`/api/me/activities/stats${qs}`, "GET");
+}
+
+export async function logActivity(
+  activityType: string, 
+  relatedEntityId: number, 
+  actualDurationMinutes?: number
+): Promise<ActivityLogConfirmationDTO> {
+  const body: ActivityLogRequestDTO = { activityType, relatedEntityId, actualDurationMinutes };
+  return coreFetch<ActivityLogConfirmationDTO>("/api/me/activities", "POST", body);
 }
 
 // ---------- Catálogos y Users (según guía de endpoints de prueba) ----------

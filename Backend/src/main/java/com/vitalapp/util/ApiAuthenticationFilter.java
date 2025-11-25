@@ -26,8 +26,10 @@ public class ApiAuthenticationFilter extends OncePerRequestFilter {
         // NO interceptar rutas de OAuth2 ni rutas públicas (modo invitado)
         if (uri.startsWith("/oauth2/") || 
             uri.startsWith("/login/oauth2/") ||
+            uri.startsWith("/login/") ||              // Agregar /login/ general
             uri.startsWith("/api/auth/") ||           // Todos los endpoints de auth son públicos
             uri.startsWith("/api/health") ||
+            uri.startsWith("/actuator/") ||           // Actuator completo
             uri.startsWith("/api/exercises") ||       // Ejercicios públicos (sin trailing slash)
             uri.startsWith("/api/routines") ||        // Rutinas públicas
             uri.startsWith("/api/categories") ||      // Categorías públicas

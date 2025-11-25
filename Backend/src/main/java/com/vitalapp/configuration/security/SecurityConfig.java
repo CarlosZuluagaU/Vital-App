@@ -74,15 +74,17 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED) // Cambiar de STATELESS a IF_REQUIRED para OAuth2
+                )
                 .authorizeHttpRequests(authz -> authz
+                        // OAuth2 endpoints - PRIMERO, antes que otros
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        
                         // Endpoints públicos (autenticación, etc.)
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/refresh").permitAll()
                         .requestMatchers("/api/health").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
-                        
-                        // OAuth2 endpoints
-                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
 
                         // Endpoints de desarrollo (Swagger, H2) - Se recomienda activarlos solo en el perfil 'dev'
                         .requestMatchers("/h2-console/**").permitAll() // Considerar @Profile("dev")
@@ -122,13 +124,10 @@ public class SecurityConfig {
                         })
                 )
                 .oauth2Login(oauth2 -> oauth2
-                        .loginPage("/oauth2/authorization/google")
-                        .defaultSuccessUrl("http://localhost:5173/oauth2/redirect", true)
                         .userInfoEndpoint(userInfo -> userInfo
                                 .userService(customOAuth2UserService)
                         )
                         .successHandler(oAuth2AuthenticationSuccessHandler)
-                        // Importante: deshabilitar redirección automática para fallos
                         .failureUrl("http://localhost:5173/welcome?error=oauth")
                 )
                 .formLogin(form -> form.disable()) // Deshabilitar formulario de login por defecto

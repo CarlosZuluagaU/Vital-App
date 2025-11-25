@@ -23,9 +23,9 @@ public class UserActivityLogEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user;
+    // TEMPORALMENTE cambiado de ManyToOne a Long directo para debug
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
     
     @Enumerated(EnumType.STRING)
     @Column(name = "activity_type", nullable = false, length = 50)
@@ -33,6 +33,9 @@ public class UserActivityLogEntity {
     
     @Column(name = "related_entity_id", nullable = false)
     private Long relatedEntityId;
+    
+    @Column(name = "actual_duration_minutes")
+    private Integer actualDurationMinutes; // Tiempo real que tomó el usuario
     
     @Column(name = "completed_at", nullable = false)
     private LocalDateTime completedAt;
@@ -45,10 +48,17 @@ public class UserActivityLogEntity {
     // Constructors
     public UserActivityLogEntity() {}
     
-    public UserActivityLogEntity(UserEntity user, ActivityType activityType, Long relatedEntityId) {
-        this.user = user;
+    public UserActivityLogEntity(Long userId, ActivityType activityType, Long relatedEntityId) {
+        this.userId = userId;
         this.activityType = activityType;
         this.relatedEntityId = relatedEntityId;
+    }
+    
+    public UserActivityLogEntity(Long userId, ActivityType activityType, Long relatedEntityId, Integer actualDurationMinutes) {
+        this.userId = userId;
+        this.activityType = activityType;
+        this.relatedEntityId = relatedEntityId;
+        this.actualDurationMinutes = actualDurationMinutes;
     }
     
     // Getters and Setters
@@ -60,12 +70,12 @@ public class UserActivityLogEntity {
         this.id = id;
     }
     
-    public UserEntity getUser() {
-        return user;
+    public Long getUserId() {
+        return userId;
     }
     
-    public void setUser(UserEntity user) {
-        this.user = user;
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
     
     public ActivityType getActivityType() {
@@ -90,6 +100,14 @@ public class UserActivityLogEntity {
     
     public void setCompletedAt(LocalDateTime completedAt) {
         this.completedAt = completedAt;
+    }
+    
+    public Integer getActualDurationMinutes() {
+        return actualDurationMinutes;
+    }
+    
+    public void setActualDurationMinutes(Integer actualDurationMinutes) {
+        this.actualDurationMinutes = actualDurationMinutes;
     }
     
     // Enum for activity types

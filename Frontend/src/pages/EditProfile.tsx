@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePrefs } from "../context/Preferences";
 import { useAuth } from "../context/Auth";
-import { getLocalWeeklySummary } from "../utils/Weekly";
-import { verifyPassword, changePassword, updateProfile } from "../hooks/useApi";
+import { changePassword, updateProfile, getWeeklyActivityStats } from "../hooks/useApi";
 import AvatarSelector, { DEFAULT_AVATARS } from "../components/AvatarSelector";
 import { A11yButton } from "../components/a11y/A11yButton";
 
@@ -50,9 +49,17 @@ export default function EditProfile() {
       setName(user.username);
     }
 
-    // Obtener la racha del resumen semanal
-    const { streakDays: streak } = getLocalWeeklySummary(7);
-    setStreakDays(streak);
+    // Obtener la racha del backend
+    const fetchStreak = async () => {
+      try {
+        const stats = await getWeeklyActivityStats();
+        setStreakDays(stats.currentStreak ?? 0);
+      } catch (error) {
+        console.error("Error obteniendo racha:", error);
+        setStreakDays(0);
+      }
+    };
+    fetchStreak();
   }, [profile, user]);
 
   const getAvatarImage = (id: number) => {

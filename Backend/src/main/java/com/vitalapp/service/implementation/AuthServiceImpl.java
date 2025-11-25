@@ -110,7 +110,24 @@ public class AuthServiceImpl implements AuthService {
     
     @Override
     public UserInfoDTO getCurrentUser(Authentication authentication) {
-        UserEntity user = (UserEntity) authentication.getPrincipal();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Usuario no autenticado");
+        }
+        
+        Object principal = authentication.getPrincipal();
+        
+        // Si es OAuth2User, necesitamos buscar el usuario en la base de datos
+        if (principal instanceof org.springframework.security.oauth2.core.user.OAuth2User) {
+            org.springframework.security.oauth2.core.user.OAuth2User oauth2User = 
+                (org.springframework.security.oauth2.core.user.OAuth2User) principal;
+            String email = oauth2User.getAttribute("email");
+            UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario OAuth2 no encontrado"));
+            return convertToUserInfoDTO(user);
+        }
+        
+        // Usuario normal con UserEntity como principal
+        UserEntity user = (UserEntity) principal;
         return convertToUserInfoDTO(user);
     }
     
