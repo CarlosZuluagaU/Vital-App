@@ -224,11 +224,23 @@ public class AuthServiceImpl implements AuthService {
     public UserInfoDTO updateProfile(Authentication authentication, UpdateProfileRequestDTO request) {
         UserEntity user = (UserEntity) authentication.getPrincipal();
         
+        System.out.println("========== UPDATE PROFILE ==========");
+        System.out.println("User ID: " + user.getId());
+        System.out.println("Current avatarId: " + user.getAvatarId());
+        System.out.println("New avatarId from request: " + request.getAvatarId());
+        System.out.println("New name from request: " + request.getName());
+        
         // Actualizar nombre y avatarId
         user.setName(request.getName());
         user.setAvatarId(request.getAvatarId());
         
+        System.out.println("After setting - avatarId: " + user.getAvatarId());
+        
         UserEntity updatedUser = userRepository.save(user);
+        
+        System.out.println("After save - avatarId: " + updatedUser.getAvatarId());
+        System.out.println("========================================");
+        
         return convertToUserInfoDTO(updatedUser);
     }
 }

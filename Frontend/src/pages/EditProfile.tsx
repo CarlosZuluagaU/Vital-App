@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { usePrefs } from "../context/Preferences";
 import { useAuth } from "../context/Auth";
@@ -10,6 +10,7 @@ export default function EditProfile() {
   const nav = useNavigate();
   const { profile, setProfile } = usePrefs();
   const { user, isAuthenticated } = useAuth();
+  const hasLoadedInitialData = useRef(false);
 
   // Determinar si es invitado (sin autenticación)
   const isGuest = !isAuthenticated;
@@ -31,6 +32,9 @@ export default function EditProfile() {
   const [showPasswordFields, setShowPasswordFields] = useState(false);
 
   useEffect(() => {
+    // Cargar datos iniciales solo una vez
+    if (hasLoadedInitialData.current) return;
+    
     // Cargar datos del perfil si existen
     if (profile) {
       setName(profile.name || "");
@@ -48,6 +52,23 @@ export default function EditProfile() {
     } else if (!profile?.name && user?.username) {
       setName(user.username);
     }
+    
+    // IMPORTANTE: Si el user del backend tiene avatarId, sincronizar con profile
+    if (user && (user as any).avatarId && isAuthenticated) {
+      const backendAvatarId = (user as any).avatarId;
+      console.log("Sincronizando avatarId del backend:", backendAvatarId);
+      setSelectedAvatarId(backendAvatarId);
+      
+      // Actualizar el profile en localStorage con el avatarId del backend
+      if (!profile || profile.avatarId !== backendAvatarId) {
+        setProfile({
+          ...profile,
+          name: profile?.name || user.name || user.username || "",
+          email: user.email,
+          avatarId: backendAvatarId,
+        });
+      }
+    }
 
     // Obtener la racha del backend
     const fetchStreak = async () => {
@@ -60,7 +81,10 @@ export default function EditProfile() {
       }
     };
     fetchStreak();
-  }, [profile, user]);
+    
+    // Marcar como cargado
+    hasLoadedInitialData.current = true;
+  }, [profile, user, isAuthenticated, setProfile]);
 
   const getAvatarImage = (id: number) => {
     return DEFAULT_AVATARS.find((a) => a.id === id)?.image || "/images/Default.png";
@@ -125,8 +149,15 @@ export default function EditProfile() {
     setLoading(true);
 
     try {
+      console.log("=== SUBMIT PROFILE ===");
+      console.log("isGuest:", isGuest);
+      console.log("isAuthenticated:", isAuthenticated);
+      console.log("name:", name);
+      console.log("selectedAvatarId:", selectedAvatarId);
+      
       // Si es invitado, solo actualizar localStorage
       if (isGuest) {
+        console.log(">>> Modo INVITADO - guardando en localStorage");
         const updatedProfile = {
           ...profile,
           name,
@@ -141,7 +172,9 @@ export default function EditProfile() {
       }
 
       // Usuario autenticado: actualizar en backend
+      console.log(">>> Usuario AUTENTICADO - llamando API");
       const updatedUser = await updateProfile(name, selectedAvatarId);
+      console.log(">>> Respuesta del backend:", updatedUser);
       
       // Si hay cambio de contraseña, hacerlo en endpoint separado
       if (showPasswordFields && newPassword) {
