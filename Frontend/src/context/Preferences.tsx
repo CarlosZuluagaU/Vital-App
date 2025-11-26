@@ -6,6 +6,9 @@ export type FontSize = "sm" | "md" | "lg";
 export type Profile = {
   name?: string;
   level?: "BASICO" | "MODERADO" | "INTERMEDIO";
+  avatarId?: number;
+  email?: string;
+  streakDays?: number;
 };
 
 type Prefs = {

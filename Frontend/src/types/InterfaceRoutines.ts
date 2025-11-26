@@ -31,6 +31,7 @@ export interface UserDTO {
   age?: number;
   phone?: string;
   provider?: Provider;
+  avatarId?: number;
   createdAt?: string;
   subscription?: SubscriptionDTO;
   roles?: string[];
@@ -128,11 +129,32 @@ export interface MultiComponentRoutineDTO {
 export interface ActivityLogRequestDTO {
   activityType: string;            // p.ej. "ROUTINE_COMPLETED"
   relatedEntityId: number;         // id de rutina/ejercicio
+  actualDurationMinutes?: number;  // Tiempo real que tomó el usuario (en minutos)
 }
 export interface ActivityLogConfirmationDTO {
   status: "success" | "error";
   message: string;
   newAchievements?: unknown[];
+}
+
+export interface WeeklyStatsDayDTO {
+  date: string;
+  sessions: number;
+  totalMinutes: number;
+}
+
+export interface WeeklyStatsDTO {
+  totalSessions: number;
+  totalMinutes: number;
+  currentStreak: number;  // Racha de días consecutivos
+  days: WeeklyStatsDayDTO[];
+  breakdown?: WeeklyActivityTypeBreakdownDTO[];
+}
+
+export interface WeeklyActivityTypeBreakdownDTO {
+  activityType: string;
+  sessions: number;
+  totalMinutes: number;
 }
 
 /** ---------- Catálogos / varios ---------- */

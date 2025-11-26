@@ -15,10 +15,10 @@ public interface UserActivityLogRepository extends JpaRepository<UserActivityLog
     
     List<UserActivityLogEntity> findByUserId(Long userId);
     
-    @Query("SELECT COUNT(u) FROM UserActivityLogEntity u WHERE u.user.id = :userId")
+    @Query("SELECT COUNT(u) FROM UserActivityLogEntity u WHERE u.userId = :userId")
     Long countActivitiesByUserId(@Param("userId") Long userId);
     
-    @Query("SELECT u FROM UserActivityLogEntity u WHERE u.user.id = :userId AND u.completedAt >= :startDate")
+    @Query("SELECT u FROM UserActivityLogEntity u WHERE u.userId = :userId AND u.completedAt >= :startDate")
     List<UserActivityLogEntity> findByUserIdAndCompletedAtAfter(@Param("userId") Long userId, 
                                                                @Param("startDate") LocalDateTime startDate);
 }

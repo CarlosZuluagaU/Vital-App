@@ -21,57 +21,101 @@ export default function Welcome() {
   const abrirA11y = () => nav("/onboarding?step=2");
 
   return (
-    <main className="min-h-screen grid place-items-center p-4">
-      <section className="w-full max-w-md rounded-2xl bg-[var(--card)] p-6 shadow border border-[var(--border)]">
-        <div className="mx-auto mb-4 grid place-items-center">
-          <div className="h-16 w-16 rounded-full grid place-items-center bg-[var(--track)]">
-            <span aria-hidden>💙</span>
+    <main className="min-h-screen grid place-items-center p-4 relative overflow-hidden">
+      {/* Fondo animado con gradientes */}
+      <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/5 via-transparent to-[var(--accent)]/10 animate-fadeIn" />
+      <div className="absolute top-20 right-20 w-64 h-64 bg-[var(--accent)]/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '4s' }} />
+      <div className="absolute bottom-20 left-20 w-96 h-96 bg-[var(--accent)]/5 rounded-full blur-3xl animate-pulse" style={{ animationDuration: '6s', animationDelay: '1s' }} />
+      
+      <section className="relative z-10 w-full max-w-md rounded-2xl bg-[var(--card)] p-8 shadow-2xl border-2 border-[var(--accent)]/20 animate-scaleIn backdrop-blur-sm">
+        {/* Ícono con efecto glow */}
+        <div className="mx-auto mb-6 grid place-items-center animate-bounce" style={{ animationDuration: '3s' }}>
+          <div className="relative h-20 w-20 rounded-full grid place-items-center bg-gradient-to-br from-[var(--accent)]/20 to-[var(--accent)]/10 shadow-lg">
+            <span aria-hidden className="text-4xl">💙</span>
+            <div className="absolute inset-0 rounded-full bg-[var(--accent)]/20 blur-xl animate-pulse" />
           </div>
         </div>
 
-        <h1 className="text-center text-xl font-bold mb-2 text-[var(--fg)]">¡Bienvenido a VitalApp!</h1>
-        <p className="text-center text-sm text-[var(--fg-muted)] mb-6">
+        {/* Título con gradiente */}
+        <h1 className="text-center text-2xl font-bold mb-3 text-[var(--fg)] animate-slideInUp">
+          <span className="bg-gradient-to-r from-[var(--accent)] to-[var(--fg)] bg-clip-text text-transparent">
+            ¡Bienvenido a VitalApp!
+          </span>
+        </h1>
+        <p className="text-center text-sm text-[var(--fg-muted)] mb-8 animate-slideInUp" style={{ animationDelay: '0.1s', animationFillMode: 'backwards' }}>
           Tu compañero personal para mantenerte activo y saludable.
-          Ejercicios diseñados especialmente para adultos mayores.
+          Ejercicios diseñados especialmente para adultos mayores. ✨
         </p>
 
-        {/* Botón de Google OAuth */}
-        <div className="mb-4">
-          <GoogleLoginButton variant="themed" className="w-full" />
+        {/* Botón de Google OAuth con animación */}
+        <div className="mb-4 animate-slideInUp" style={{ animationDelay: '0.2s', animationFillMode: 'backwards' }}>
+          <GoogleLoginButton variant="themed" className="w-full transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl" />
         </div>
 
-        <div className="relative my-6">
+        {/* Divisor elegante */}
+        <div className="relative my-6 animate-slideInUp" style={{ animationDelay: '0.3s', animationFillMode: 'backwards' }}>
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-[var(--border)]"></div>
+            <div className="w-full border-t-2 border-[var(--border)]"></div>
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-[var(--card)] px-2 text-[var(--fg-muted)]">O continúa con</span>
+            <span className="bg-[var(--card)] px-3 py-1 text-[var(--fg-muted)] font-semibold rounded-full">O continúa con</span>
           </div>
         </div>
 
-        <A11yButton className="w-full mb-3" onClick={() => nav("/onboarding")}>
-          Crear Mi Perfil
-        </A11yButton>
+        {/* Botones con efectos mejorados */}
+        <div className="space-y-3">
+          <div className="animate-slideInUp" style={{ animationDelay: '0.4s', animationFillMode: 'backwards' }}>
+            <A11yButton 
+              className="w-full transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl hover:shadow-[var(--accent)]/30" 
+              onClick={() => nav("/onboarding")}
+            >
+              <span className="flex items-center justify-center gap-2">
+                <span>✨</span>
+                <span>Crear Mi Perfil</span>
+              </span>
+            </A11yButton>
+          </div>
 
-        <button
-          onClick={continuarInvitado}
-          className="w-full rounded-lg px-4 py-3 min-h-[44px] border border-[var(--border)] bg-[var(--card)] text-[var(--fg)] focus-visible:outline"
-        >
-          Continuar como Invitado
-        </button>
+          <button
+            onClick={continuarInvitado}
+            className="w-full rounded-xl px-4 py-3 min-h-[44px] border-2 border-[var(--border)] bg-[var(--card-elevated)] text-[var(--fg)] hover:border-[var(--accent)]/50 hover:bg-[var(--accent)]/5 transform hover:scale-105 transition-all duration-300 focus-visible:outline focus-visible:ring-2 focus-visible:ring-[var(--accent)] shadow-md hover:shadow-lg animate-slideInUp"
+            style={{ animationDelay: '0.5s', animationFillMode: 'backwards' }}
+          >
+            <span className="flex items-center justify-center gap-2">
+              <span>👤</span>
+              <span>Continuar como Invitado</span>
+            </span>
+          </button>
+        </div>
 
-        <div className="mt-6">
+        {/* Sección de accesibilidad con animación */}
+        <div className="mt-6 animate-slideInUp" style={{ animationDelay: '0.6s', animationFillMode: 'backwards' }}>
           <button
             onClick={abrirA11y}
-            className="w-full rounded-lg px-4 py-3 min-h-[44px] border border-[var(--border)] bg-[var(--card)] text-[var(--fg)] focus-visible:outline"
+            className="w-full rounded-xl px-4 py-3 min-h-[44px] border-2 border-[var(--accent)]/30 bg-gradient-to-r from-[var(--accent)]/5 to-transparent text-[var(--fg)] hover:border-[var(--accent)]/50 hover:from-[var(--accent)]/10 transform hover:scale-105 transition-all duration-300 focus-visible:outline focus-visible:ring-2 focus-visible:ring-[var(--accent)] shadow-md hover:shadow-lg group"
           >
-            Configuración de Accesibilidad
+            <span className="flex items-center justify-center gap-2">
+              <span className="text-xl group-hover:scale-125 transition-transform duration-300">⚙️</span>
+              <span className="font-semibold">Configuración de Accesibilidad</span>
+            </span>
           </button>
 
-          <ul className="mt-4 text-xs text-[var(--fg-muted)] list-disc ml-5 space-y-1">
-            <li>Rutinas adaptadas a tu nivel</li>
-            <li>Comandos de voz (más adelante)</li>
-            <li>Sin recopilación de datos personales</li>
+          {/* Lista de características con iconos */}
+          <ul className="mt-4 space-y-2">
+            {[
+              { icon: "🎯", text: "Rutinas adaptadas a tu nivel" },
+              { icon: "🎤", text: "Comandos de voz (próximamente)" },
+              { icon: "🔒", text: "Sin recopilación de datos personales" }
+            ].map((item, idx) => (
+              <li 
+                key={idx}
+                className="flex items-center gap-2 text-sm text-[var(--fg-muted)] animate-slideInLeft"
+                style={{ animationDelay: `${0.7 + idx * 0.1}s`, animationFillMode: 'backwards' }}
+              >
+                <span className="text-lg">{item.icon}</span>
+                <span>{item.text}</span>
+              </li>
+            ))}
           </ul>
         </div>
       </section>

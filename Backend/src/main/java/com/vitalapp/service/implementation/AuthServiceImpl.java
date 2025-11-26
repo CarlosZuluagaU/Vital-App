@@ -19,9 +19,11 @@ import com.vitalapp.persistence.repository.SubscriptionPlanRepository;
 import com.vitalapp.persistence.repository.UserRepository;
 import com.vitalapp.persistence.repository.UserSubscriptionRepository;
 import com.vitalapp.presentation.dto.AuthResponseDTO;
+import com.vitalapp.presentation.dto.ChangePasswordRequestDTO;
 import com.vitalapp.presentation.dto.LoginRequestDTO;
 import com.vitalapp.presentation.dto.SignUpRequestDTO;
 import com.vitalapp.presentation.dto.SubscriptionInfoDTO;
+import com.vitalapp.presentation.dto.UpdateProfileRequestDTO;
 import com.vitalapp.presentation.dto.UserInfoDTO;
 import com.vitalapp.service.interfaces.AuthService;
 import com.vitalapp.util.JwtTokenProvider;
@@ -108,7 +110,24 @@ public class AuthServiceImpl implements AuthService {
     
     @Override
     public UserInfoDTO getCurrentUser(Authentication authentication) {
-        UserEntity user = (UserEntity) authentication.getPrincipal();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("Usuario no autenticado");
+        }
+        
+        Object principal = authentication.getPrincipal();
+        
+        // Si es OAuth2User, necesitamos buscar el usuario en la base de datos
+        if (principal instanceof org.springframework.security.oauth2.core.user.OAuth2User) {
+            org.springframework.security.oauth2.core.user.OAuth2User oauth2User = 
+                (org.springframework.security.oauth2.core.user.OAuth2User) principal;
+            String email = oauth2User.getAttribute("email");
+            UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario OAuth2 no encontrado"));
+            return convertToUserInfoDTO(user);
+        }
+        
+        // Usuario normal con UserEntity como principal
+        UserEntity user = (UserEntity) principal;
         return convertToUserInfoDTO(user);
     }
     
@@ -145,6 +164,7 @@ public class AuthServiceImpl implements AuthService {
         userInfo.setAge(user.getAge());
         userInfo.setPhone(user.getPhone());
         userInfo.setProvider(user.getProvider().toString());
+        userInfo.setAvatarId(user.getAvatarId());
         // Validación para evitar NullPointerException con fechas
         userInfo.setCreatedAt(user.getCreatedAt() != null ? user.getCreatedAt() : LocalDateTime.now());
         
@@ -171,5 +191,56 @@ public class AuthServiceImpl implements AuthService {
         }
         
         return userInfo;
+    }
+    
+    @Override
+    public boolean verifyPassword(Authentication authentication, String password) {
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        return passwordEncoder.matches(password, user.getPassword());
+    }
+    
+    @Override
+    @Transactional
+    public void changePassword(Authentication authentication, ChangePasswordRequestDTO request) {
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        
+        // Verificar contraseña actual
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+            throw new RuntimeException("La contraseña actual es incorrecta");
+        }
+        
+        // Verificar que la nueva contraseña no sea igual a la actual
+        if (request.getCurrentPassword().equals(request.getNewPassword())) {
+            throw new RuntimeException("La nueva contraseña no puede ser igual a la actual");
+        }
+        
+        // Actualizar contraseña
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        userRepository.save(user);
+    }
+    
+    @Override
+    @Transactional
+    public UserInfoDTO updateProfile(Authentication authentication, UpdateProfileRequestDTO request) {
+        UserEntity user = (UserEntity) authentication.getPrincipal();
+        
+        System.out.println("========== UPDATE PROFILE ==========");
+        System.out.println("User ID: " + user.getId());
+        System.out.println("Current avatarId: " + user.getAvatarId());
+        System.out.println("New avatarId from request: " + request.getAvatarId());
+        System.out.println("New name from request: " + request.getName());
+        
+        // Actualizar nombre y avatarId
+        user.setName(request.getName());
+        user.setAvatarId(request.getAvatarId());
+        
+        System.out.println("After setting - avatarId: " + user.getAvatarId());
+        
+        UserEntity updatedUser = userRepository.save(user);
+        
+        System.out.println("After save - avatarId: " + updatedUser.getAvatarId());
+        System.out.println("========================================");
+        
+        return convertToUserInfoDTO(updatedUser);
     }
 }

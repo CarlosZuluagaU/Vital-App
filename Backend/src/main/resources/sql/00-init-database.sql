@@ -126,6 +126,7 @@ CREATE TABLE IF NOT EXISTS users (
     provider VARCHAR(50) DEFAULT 'LOCAL',
     provider_id VARCHAR(255),
     image_url VARCHAR(500),
+    avatar_id INTEGER DEFAULT 1,
     email_verified BOOLEAN DEFAULT FALSE,
     is_enabled BOOLEAN DEFAULT TRUE,
     is_account_non_expired BOOLEAN DEFAULT TRUE,

@@ -37,15 +37,25 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws IOException {
 
-        String targetUrl = determineTargetUrl(request, response, authentication);
+        logger.info("=== OAuth2 Authentication Success Handler STARTED ===");
+        logger.info("Authentication class: " + (authentication != null ? authentication.getClass().getName() : "NULL"));
+        logger.info("Principal class: " + (authentication != null && authentication.getPrincipal() != null ? authentication.getPrincipal().getClass().getName() : "NULL"));
+        
+        try {
+            String targetUrl = determineTargetUrl(request, response, authentication);
+            
+            if (response.isCommitted()) {
+                logger.debug("Response has already been committed. Unable to redirect to " + targetUrl);
+                return;
+            }
 
-        if (response.isCommitted()) {
-            logger.debug("Response has already been committed. Unable to redirect to " + targetUrl);
-            return;
+            clearAuthenticationAttributes(request);
+            logger.info("=== Redirecting to: " + targetUrl + " ===");
+            getRedirectStrategy().sendRedirect(request, response, targetUrl);
+        } catch (Exception e) {
+            logger.error("=== OAuth2 Success Handler FAILED ===", e);
+            response.sendRedirect("http://localhost:5173/welcome?error=oauth");
         }
-
-        clearAuthenticationAttributes(request);
-        getRedirectStrategy().sendRedirect(request, response, targetUrl);
     }
 
     @Override
@@ -65,28 +75,38 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
                 : "http://localhost:5173/oauth2/redirect"
         );
 
-        OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+        try {
+            OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
 
-        // Procesar el usuario OAuth2
-        UserEntity user = processOAuth2User(oAuth2User, authentication);
+            // Procesar el usuario OAuth2
+            UserEntity user = processOAuth2User(oAuth2User, authentication);
 
-        // Generar JWT token
-        String token = jwtTokenProvider.generateTokenFromUserId(user.getId());
+            // Generar JWT token
+            String token = jwtTokenProvider.generateTokenFromUserId(user.getId());
 
-        String finalUrl = UriComponentsBuilder.fromUriString(targetUrl)
-                .queryParam("token", token)
-                .build().toUriString();
+            String finalUrl = UriComponentsBuilder.fromUriString(targetUrl)
+                    .queryParam("token", token)
+                    .build().toUriString();
 
-        logger.info("OAuth2 Success - Redirecting to: " + finalUrl);
-        
-        return finalUrl;
+            logger.info("OAuth2 Success - Redirecting to: " + finalUrl);
+            
+            return finalUrl;
+        } catch (Exception e) {
+            logger.error("Error processing OAuth2 authentication", e);
+            // Redirigir a welcome con error
+            return "http://localhost:5173/welcome?error=oauth";
+        }
     }
 
     private UserEntity processOAuth2User(OAuth2User oAuth2User, Authentication authentication) {
         Map<String, Object> attributes = oAuth2User.getAttributes();
         
+        logger.info("Processing OAuth2 user with attributes: " + attributes.keySet());
+        
         // Determinar el proveedor (Google o Facebook)
         AuthProvider provider = determineProvider(authentication);
+        
+        logger.info("Provider determined: " + provider);
         
         String email;
         String name;
@@ -140,9 +160,13 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         // o del nombre del registro del cliente OAuth2
         String clientName = authentication.getName();
         
-        if (clientName != null && clientName.contains("google")) {
+        logger.info("Determining provider from authentication name: " + clientName);
+        
+        if (clientName != null && clientName.toLowerCase().contains("google")) {
+            logger.info("Provider identified as GOOGLE from name");
             return AuthProvider.GOOGLE;
-        } else if (clientName != null && clientName.contains("facebook")) {
+        } else if (clientName != null && clientName.toLowerCase().contains("facebook")) {
+            logger.info("Provider identified as FACEBOOK from name");
             return AuthProvider.FACEBOOK;
         }
         
@@ -150,15 +174,20 @@ public class OAuth2AuthenticationSuccessHandler extends SimpleUrlAuthenticationS
         OAuth2User oauth2User = (OAuth2User) authentication.getPrincipal();
         Map<String, Object> attributes = oauth2User.getAttributes();
         
+        logger.info("Checking attributes: " + attributes.keySet());
+        
         // Google tiene "sub" como identificador
         if (attributes.containsKey("sub")) {
+            logger.info("Provider identified as GOOGLE from 'sub' attribute");
             return AuthProvider.GOOGLE;
         }
         // Facebook tiene "id" como identificador único
         else if (attributes.containsKey("id") && !attributes.containsKey("sub")) {
+            logger.info("Provider identified as FACEBOOK from 'id' attribute");
             return AuthProvider.FACEBOOK;
         }
         
+        logger.error("Could not determine OAuth2 provider!");
         throw new RuntimeException("Proveedor OAuth2 desconocido");
     }
 
