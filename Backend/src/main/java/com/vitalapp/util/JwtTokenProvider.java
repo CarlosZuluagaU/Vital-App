@@ -55,13 +55,23 @@ public class JwtTokenProvider {
     }
     
     public Long getUserIdFromJWT(String token) {
+        System.out.println("========== JwtTokenProvider.getUserIdFromJWT ==========");
+        System.out.println("Token (first 30 chars): " + (token != null ? token.substring(0, Math.min(30, token.length())) : "NULL"));
+        
         Claims claims = Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
         
-        return Long.parseLong(claims.getSubject());
+        String subjectStr = claims.getSubject();
+        System.out.println("JWT subject (sub): " + subjectStr);
+        
+        Long userId = Long.parseLong(subjectStr);
+        System.out.println("Parsed userId: " + userId);
+        System.out.println("======================================================");
+        
+        return userId;
     }
     
     public boolean validateToken(String authToken) {

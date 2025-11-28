@@ -1,16 +1,15 @@
-import React from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { getRoutineById } from "../hooks/useApi";
+import { getRoutineById, logActivity, getAuthToken } from "../hooks/useApi";
 import ExercisePlayer, { type ExerciseMini } from "../components/ExercisePlayer";
+import { fireMascotCue } from "../components/pet/VitaAssistant";
 
 type Json = Record<string, unknown>;
 const asNum = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 const asStr = (v: unknown) => (typeof v === "string" && v.trim() !== "" ? v : undefined);
 const asArr = (v: unknown): Json[] => (Array.isArray(v) ? (v as Json[]) : []);
 
-/* ======================
-   Formato local de fecha (no UTC)
-   ====================== */
+/* Formato local de fecha (no UTC) */
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const toLocalISODate = (t: number) => {
   const d = new Date(t);
@@ -20,9 +19,7 @@ const toLocalISODate = (t: number) => {
   return `${y}-${m}-${day}`; // YYYY-MM-DD en zona local
 };
 
-/* ======================
-   Persistencia de sesiones
-   ====================== */
+/* Persistencia de sesiones */
 type FinishedSession = {
   routineId: number;
   title?: string;
@@ -49,9 +46,7 @@ function appendToDayBucket(s: FinishedSession) {
   localStorage.setItem(key, JSON.stringify(bucket));
 }
 
-/* ======================
-   Normalización de ejercicios
-   ====================== */
+/* Normalización de ejercicios */
 function toMini(e: Json): ExerciseMini {
   const rawName =
     asStr((e as Json).exerciseName) ??
@@ -129,9 +124,7 @@ function extractExercises(routine: Json | null | undefined): ExerciseMini[] {
   });
 }
 
-/* ======================
-   Progreso en vivo
-   ====================== */
+/* Progreso en vivo */
 type Progress = {
   routineId: number;
   startedAt: number;
@@ -167,21 +160,89 @@ export default function RoutinePlayer() {
   const location = useLocation() as { state?: { routine?: Json; exercises?: ExerciseMini[] } };
   const routineId = id ? Number(id) : NaN;
 
-  const [loading, setLoading] = React.useState(true);
-  const [routine, setRoutine] = React.useState<Json | null>(null);
-  const [exercises, setExercises] = React.useState<ExerciseMini[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [routine, setRoutine] = useState<Json | null>(null);
+  const [exercises, setExercises] = useState<ExerciseMini[]>([]);
 
-  const [isRunning, setIsRunning] = React.useState(true);
-  const [elapsed, setElapsed] = React.useState(0);
-  const [index, setIndex] = React.useState(0);
+  const [isRunning, setIsRunning] = useState(true);
+  const [elapsed, setElapsed] = useState(0);
+  const [index, setIndex] = useState(0);
 
   // Pantalla de finalización
-  const [finished, setFinished] = React.useState(false);
+  const [finished, setFinished] = useState(false);
 
-  // Ref para quitar el listener de teclado
-  const keyHandlerRef = React.useRef<(e: KeyboardEvent) => void>();
+  // Refs para quitar el listener de teclado y controlar mitad
+  const keyHandlerRef = useRef<((e: KeyboardEvent) => void) | null>(null);
+  const halfFired = useRef(false);
+  const lastMotivationMinute = useRef(0); // Para rastrear cada 5 minutos
 
-  React.useEffect(() => {
+  const total = useMemo(() => {
+    const s = exercises.reduce((a, e) => a + (e.durationSeconds ?? 0), 0);
+    return s || Math.max(1, exercises.length * 60);
+  }, [exercises]);
+
+  useEffect(() => {
+    halfFired.current = false;
+    lastMotivationMinute.current = 0;
+  }, [routineId]);
+
+  useEffect(() => {
+    if (halfFired.current || finished || exercises.length === 0) return;
+    
+    // Calculamos el progreso basándonos principalmente en ejercicios completados
+    const progressByExercise = (index + 1) / exercises.length;
+    
+    // Si tenemos tiempo total, también lo consideramos
+    const progressByTime = total > 0 ? elapsed / total : 0;
+    
+    // Usamos el progreso por ejercicios como principal, o por tiempo si no hay ejercicios suficientes
+    const currentProgress = exercises.length > 0 ? progressByExercise : progressByTime;
+    
+    console.debug(
+      "[half-check]",
+      { 
+        index, 
+        exercisesLength: exercises.length, 
+        progressByExercise: progressByExercise.toFixed(2),
+        progressByTime: progressByTime.toFixed(2),
+        currentProgress: currentProgress.toFixed(2)
+      }
+    );
+
+    if (currentProgress >= 0.5) {
+      halfFired.current = true;
+      console.debug("[half-cue] ¡Mitad alcanzada!");
+      fireMascotCue({ mood: "ok", msg: "¡Vas por la mitad! 💪 ¡Sigue así!", ms: 3000 });
+    }
+  }, [index, exercises.length, finished, elapsed, total]);
+
+  // Motivación cada 5 minutos
+  useEffect(() => {
+    if (finished) return;
+    
+    const currentMinute = Math.floor(elapsed / 60);
+    const motivationInterval = 5; // cada 5 minutos
+    
+    // Verificar si pasamos un múltiplo de 5 minutos
+    if (currentMinute > 0 && 
+        currentMinute % motivationInterval === 0 && 
+        currentMinute !== lastMotivationMinute.current) {
+      lastMotivationMinute.current = currentMinute;
+      
+      const messages = [
+        "¡Sigue así! 💪",
+        "¡Lo estás haciendo genial! 🌟",
+        "¡Continúa con esa energía! ⚡",
+        "¡Vas muy bien! 🎯",
+        "¡No te rindas! 🔥"
+      ];
+      const randomMsg = messages[Math.floor(Math.random() * messages.length)];
+      
+      fireMascotCue({ mood: "ok", msg: randomMsg, ms: 3000 });
+    }
+  }, [elapsed, finished]);
+
+  useEffect(() => {
     let mounted = true;
     (async () => {
       try {
@@ -206,6 +267,19 @@ export default function RoutinePlayer() {
           setElapsed(prev.elapsedSeconds);
           setIndex(Math.min(prev.currentIndex, Math.max(0, ex.length - 1)));
         }
+        
+        // Mensaje de inicio específico cuando se carga la rutina
+        if (mounted) {
+          const startMessages = [
+            "¡Es hora de brillar! 🌟 ¡Vamos con toda la energía!",
+            "¡Prepárate para dar lo mejor de ti! 💪 ¡Tú puedes!",
+            "¡Comencemos esta aventura juntos! 🚀 ¡Vamos!",
+            "¡Tu cuerpo te agradecerá este esfuerzo! 💚 ¡Adelante!",
+            "¡Cada paso cuenta! 🎯 ¡Iniciemos con todo!"
+          ];
+          const randomStart = startMessages[Math.floor(Math.random() * startMessages.length)];
+          fireMascotCue({ mood: "clap", msg: randomStart, ms: 4000 });
+        }
       } catch (e) {
         console.error(e);
       } finally {
@@ -219,14 +293,14 @@ export default function RoutinePlayer() {
   }, [routineId]);
 
   // Timer global
-  React.useEffect(() => {
+  useEffect(() => {
     if (!isRunning || finished) return;
     const t = setInterval(() => setElapsed((s) => s + 1), 1000);
     return () => clearInterval(t);
   }, [isRunning, finished]);
 
   // Guardar progreso
-  React.useEffect(() => {
+  useEffect(() => {
     if (!Number.isFinite(routineId) || finished) return;
     const p: Progress = {
       routineId,
@@ -238,9 +312,17 @@ export default function RoutinePlayer() {
   }, [routineId, elapsed, index, finished]);
 
   // Teclado (space/arrow)
-  React.useEffect(() => {
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (finished) return; // no interacciones cuando ya finalizó
+      // Si está en pantalla de finalización, Escape cierra
+      if (finished) {
+        if (e.key === "Escape" || e.code === "Escape") {
+          e.preventDefault();
+          nav("/");
+        }
+        return;
+      }
+      // Durante la rutina
       if (e.key === " " || e.code === "Space") {
         e.preventDefault();
         setIsRunning((v) => !v);
@@ -252,8 +334,11 @@ export default function RoutinePlayer() {
     };
     keyHandlerRef.current = onKey;
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [exercises.length, finished]);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      keyHandlerRef.current = null;
+    };
+  }, [exercises.length, finished, nav]);
 
   const handlePrev = () => {
     if (index === 0) {
@@ -270,14 +355,17 @@ export default function RoutinePlayer() {
 
   const handleNext = () => setIndex((i) => Math.min(exercises.length - 1, i + 1));
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     // 1) Cortar interacciones y timer inmediatamente
     setIsRunning(false);
     setFinished(true);
-    // Quitar listener de teclado de inmediato
+    // Quitar listener de teclado de inmediato usando el ref
     if (keyHandlerRef.current) {
       window.removeEventListener("keydown", keyHandlerRef.current);
     }
+
+    // Mostrar mensaje de felicitación sin navegación automática
+    fireMascotCue({ mood: "clap", msg: "¡Rutina completada! 🎉 ¡Excelente trabajo!", ms: 4000 });
 
     // 2) Persistir en local
     const title = asStr((routine as Json)?.title) ?? "Rutina";
@@ -292,9 +380,21 @@ export default function RoutinePlayer() {
     appendToDayBucket(session);
     clearProgress(routineId);
 
-    // 3) (Gancho a back) — no bloquea navegación
-    // TODO: cuando habiliten endpoint, mandar al servidor aquí.
-    console.debug("[finish] sesión guardada localmente", session);
+    // 3) Guardar en el backend (si está autenticado)
+    const token = getAuthToken();
+    if (token) {
+      try {
+        // Convertir segundos a minutos (redondeado)
+        const actualMinutes = Math.round(elapsed / 60);
+        await logActivity("ROUTINE_COMPLETED", routineId, actualMinutes);
+        console.debug("[finish] actividad guardada en backend", { routineId, actualMinutes });
+      } catch (error) {
+        console.error("[finish] error al guardar en backend:", error);
+        // No bloqueamos la UI si falla el backend
+      }
+    } else {
+      console.debug("[finish] modo invitado - solo guardado local");
+    }
   };
 
   const fmt = (s: number) => {
@@ -305,8 +405,16 @@ export default function RoutinePlayer() {
 
   if (loading) {
     return (
-      <main className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg px-4 py-6">
-        <p aria-live="polite">Preparando rutina…</p>
+      <main className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg px-4 py-6 relative min-h-screen flex items-center justify-center">
+        <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-accent/30 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "3s" }}></div>
+        </div>
+        <div className="text-center animate-scaleIn">
+          <span className="text-6xl mb-4 inline-block animate-bounce" style={{ animationDuration: "1.5s" }}>💪</span>
+          <p className="text-xl font-semibold text-accent" aria-live="polite">
+            Preparando rutina…
+          </p>
+        </div>
       </main>
     );
   }
@@ -315,80 +423,103 @@ export default function RoutinePlayer() {
   const current = exercises[index];
 
   return (
-    <main className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg px-4 py-4 md:py-6">
+    <main className="mx-auto max-w-screen-sm md:max-w-screen-md lg:max-w-screen-lg px-4 py-4 md:py-6 relative">
+      {/* Decorative background */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden -z-10">
+        <div className="absolute -top-32 -right-32 w-96 h-96 bg-accent/20 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "6s" }}></div>
+        <div className="absolute -bottom-32 -left-32 w-64 h-64 bg-accent/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "8s" }}></div>
+      </div>
+
       {/* Si finalizó, mostramos una pantalla clara de cierre (tipo Duolingo) */}
       {finished ? (
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--card)] p-6 text-center">
-          <h1 className="text-xl md:text-2xl font-bold text-[var(--fg)]">¡Rutina completada! 🎉</h1>
-          <p className="mt-2 text-[var(--fg)]">
-            Tiempo total: <b>{fmt(elapsed)}</b> · Ejercicios: <b>{exercises.length}</b>
-          </p>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3">
+        <section className="rounded-2xl border-2 border-accent/30 bg-gradient-to-br from-card to-card-elevated p-8 md:p-12 text-center animate-scaleIn shadow-2xl">
+          <span className="text-7xl mb-6 inline-block animate-bounce" style={{ animationDuration: "1s", animationIterationCount: "3" }}>🎉</span>
+          <h1 className="text-2xl md:text-4xl font-bold text-accent mb-4">
+            ¡Rutina completada!
+          </h1>
+          <div className="flex flex-wrap items-center justify-center gap-4 text-lg mb-8">
+            <div className="px-4 py-2 rounded-xl bg-accent/10 border-2 border-accent/30">
+              <span className="text-fg-muted">⏱️ Tiempo:</span>{" "}
+              <b className="text-accent">{fmt(elapsed)}</b>
+            </div>
+            <div className="px-4 py-2 rounded-xl bg-accent/10 border-2 border-accent/30">
+              <span className="text-fg-muted">💪 Ejercicios:</span>{" "}
+              <b className="text-accent">{exercises.length}</b>
+            </div>
+          </div>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             <button
-              className="min-h-[44px] min-w-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
+              className="min-h-[44px] min-w-[44px] px-6 py-3 rounded-xl bg-[var(--accent)] text-[var(--bg)] font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 transition-all duration-300"
               onClick={() => nav("/resumen")}
             >
-              Ver resumen semanal
+              📊 Ver resumen semanal
             </button>
             <button
-              className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
+              className="min-h-[44px] min-w-[44px] px-6 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--fg)] font-semibold hover:bg-[var(--card-elevated)] hover:scale-105 active:scale-100 transition-all duration-300"
               onClick={() => nav("/")}
             >
-              Ir al inicio
+              🏠 Ir al inicio
             </button>
           </div>
-          <p className="mt-3 text-sm text-[var(--fg-muted)]">Puedes cerrar esta ventana con Esc.</p>
+          <p className="mt-6 text-sm text-fg-muted">Presiona <kbd className="px-2 py-1 rounded bg-accent/20 border border-accent/40 font-mono text-fg font-semibold">Esc</kbd> para ir al inicio.</p>
         </section>
       ) : (
         <>
           {/* Barra superior */}
           <section
-            className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-3 md:p-4 flex items-center justify-between gap-3"
+            className="rounded-xl border-2 border-accent/30 bg-gradient-to-r from-card to-card-elevated p-3 md:p-4 flex items-center justify-between gap-3 shadow-lg animate-fadeIn"
             aria-label="Estado de la rutina"
           >
-            <div>
-              <h1 className="text-base md:text-lg font-semibold text-[var(--fg)]">{title}</h1>
-              <p className="text-sm text-[var(--fg-muted)]">
-                Ejercicio {exercises.length ? index + 1 : 0} de {exercises.length} · Tiempo {fmt(elapsed)}
+            <div className="flex-1">
+              <h1 className="text-base md:text-lg font-bold text-accent">
+                {title}
+              </h1>
+              <p className="text-sm text-fg-muted flex items-center gap-2 mt-1">
+                <span>💪</span> Ejercicio {exercises.length ? index + 1 : 0} de {exercises.length}
+                <span className="mx-1">·</span>
+                <span>⏱️</span> {fmt(elapsed)}
               </p>
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
+                className="min-h-[44px] min-w-[44px] px-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--card-elevated)] hover:scale-105 active:scale-100 transition-all duration-300 font-semibold text-[var(--fg)]"
                 onClick={() => setIsRunning((v) => !v)}
                 aria-pressed={isRunning}
               >
-                {isRunning ? "Pausar" : "Continuar"}
+                {isRunning ? "⏸️ Pausar" : "▶️ Continuar"}
               </button>
             </div>
           </section>
 
           {/* Contenido del ejercicio (key => asegura remontar el iframe al cambiar) */}
-          <section className="mt-4 md:mt-6 rounded-xl border border-[var(--border)] bg-[var(--card)] p-4 md:p-6">
+          <section className="mt-4 md:mt-6 rounded-2xl border-2 border-accent/20 bg-gradient-to-br from-card to-card-elevated p-4 md:p-6 shadow-lg animate-fadeIn" style={{ animationDelay: "0.1s" }}>
             {current ? (
-              <div key={current.id}>
+              <div key={`${index}-${current.id}`}>
                 <ExercisePlayer exercise={current} />
               </div>
             ) : (
-              <p className="text-[var(--fg)]">No hay ejercicios definidos para esta rutina.</p>
+              <div className="text-center py-8">
+                <span className="text-5xl mb-4 inline-block">😕</span>
+                <p className="text-fg">No hay ejercicios definidos para esta rutina.</p>
+              </div>
             )}
           </section>
 
           {/* Controles inferiores */}
-          <nav className="mt-4 md:mt-6 flex items-center justify-between gap-3">
+          <nav className="mt-4 md:mt-6 flex items-center justify-between gap-3 animate-fadeIn" style={{ animationDelay: "0.2s" }}>
             <button
               type="button"
-              className="min-h-[44px] min-w-[44px] px-4 rounded-lg border border-[var(--border)] bg-[var(--card)]"
+              className="min-h-[44px] min-w-[44px] px-6 py-3 rounded-xl border border-[var(--border)] bg-[var(--card)] text-[var(--fg)] hover:bg-[var(--card-elevated)] hover:scale-105 active:scale-100 transition-all duration-300 font-semibold"
               onClick={handlePrev}
             >
-              {index === 0 ? "Salir" : "← Anterior"}
+              {index === 0 ? "🚪 Salir" : "← Anterior"}
             </button>
 
             {index < exercises.length - 1 ? (
               <button
                 type="button"
-                className="min-h-[44px] min-w-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
+                className="min-h-[44px] min-w-[44px] px-6 py-3 rounded-xl bg-[var(--accent)] text-[var(--bg)] font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 transition-all duration-300"
                 onClick={handleNext}
               >
                 Siguiente →
@@ -396,10 +527,10 @@ export default function RoutinePlayer() {
             ) : (
               <button
                 type="button"
-                className="min-h-[44px] min-w-[44px] px-4 rounded-lg bg-[var(--accent)] text-[var(--bg)] font-semibold"
+                className="min-h-[44px] min-w-[44px] px-6 py-3 rounded-xl bg-[var(--accent)] text-[var(--bg)] font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-100 transition-all duration-300"
                 onClick={handleFinish}
               >
-                Finalizar rutina ✓
+                ✓ Finalizar rutina
               </button>
             )}
           </nav>
